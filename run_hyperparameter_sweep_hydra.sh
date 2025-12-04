@@ -7,7 +7,7 @@
 # Customize these values as needed:
 MODEL="lstm_img"
 INPUTS="img_only"
-LEARNING_RATES="0.001,0.0001,0.00001"
+LEARNING_RATES="0.01,0.001,0.0001"
 LAMBDA_REGS="0.01,0.001,0.0001"
 SEEDS="0,1,2"
 

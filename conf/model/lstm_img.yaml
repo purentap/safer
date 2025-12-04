@@ -1,4 +1,6 @@
 # @package _global_
+defaults:
+  - inputs: img_only
 model:
   class_name: LSTMModel
   type: lstm

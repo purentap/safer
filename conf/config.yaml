@@ -1,11 +1,10 @@
 defaults:
   - model: lstm_img
-  - inputs: img_only
   - dataset: default
 
 # Training hyperparameters
 training:
-  n_epochs: 300
+  n_epochs: 500
   batch_size: 16
   learning_rate: 0.001
   lambda_reg: 0.01
@@ -25,10 +24,10 @@ scheduler:
 
 # Experiment tracking
 wandb:
-  project: deneme
+  project: img_embeddings_auc_sweep
   group: null  # Will be set automatically or can be overridden
   name: null   # Will be set automatically or can be overridden
-  enabled: true
+  enabled: false
 
 # Random seed
 seed: 0

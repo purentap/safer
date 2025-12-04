@@ -36,10 +36,10 @@ class LSTMModel(nn.Module):
         return out
 
 class FusionLSTMModel(nn.Module):
-    def __init__(self, img_dim, action_dim, lstm_hidden_dim=256, gate_hidden_dim=512, output_dim=1, use_gate=True):
+    def __init__(self, cfg):
         super(FusionLSTMModel, self).__init__()
-        self.use_gate = use_gate
-        concat_dim = img_dim + action_dim
+        #self.use_gate = use_gate
+        concat_dim = cfg.img_dim + cfg.action_dim
         #self.img_weight = nn.Parameter(torch.tensor(1.0))
         #self.action_weight = nn.Parameter(torch.tensor(1.0))
 
@@ -57,22 +57,21 @@ class FusionLSTMModel(nn.Module):
             nn.Sigmoid()
         )
         '''
-        if use_gate:
-            self.img_weight = nn.Sequential(
-                nn.Linear(concat_dim, gate_hidden_dim),
-                nn.ReLU(),
-                nn.Linear(gate_hidden_dim, 1),
-                nn.Sigmoid()
-            )
-        self.lstm = nn.LSTM(concat_dim, lstm_hidden_dim, num_layers=1,  batch_first=True)
-        self.fc = nn.Linear(lstm_hidden_dim, output_dim)
+        #if use_gate:
+        self.img_weight = nn.Sequential(
+            nn.Linear(concat_dim, cfg.gate_hidden_dim),
+            nn.ReLU(),
+            nn.Linear(cfg.gate_hidden_dim, 1),
+            nn.Sigmoid()
+        )
+        self.lstm = nn.LSTM(concat_dim, cfg.lstm_hidden_dim, num_layers=1,  batch_first=True)
+        self.fc = nn.Linear(cfg.lstm_hidden_dim, cfg.output_dim)
     def forward(self, img_embeddings, action_embeddings):
         
-        if self.use_gate:
-            x = torch.cat([img_embeddings, action_embeddings], dim=-1)
-            learned_weight = self.img_weight(x)
-            img_embeddings = img_embeddings * learned_weight
-            action_embeddings = action_embeddings * (1 - learned_weight)
+        x = torch.cat([img_embeddings, action_embeddings], dim=-1)
+        learned_weight = self.img_weight(x)
+        img_embeddings = img_embeddings * learned_weight
+        action_embeddings = action_embeddings * (1 - learned_weight)
         concat_input = torch.cat([img_embeddings, action_embeddings], dim=-1)
         out, _ = self.lstm(concat_input)
         out = torch.sigmoid(self.fc(out))

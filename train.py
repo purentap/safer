@@ -12,6 +12,8 @@ from omegaconf import DictConfig, OmegaConf
 
 @hydra.main(version_base=None, config_path="conf", config_name="config")
 def main(cfg: DictConfig):
+    print(cfg)
+    
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     utils.seed_everything(cfg.seed)
 
