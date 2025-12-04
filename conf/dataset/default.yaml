@@ -1,0 +1,4 @@
+# @package _global_
+dataset:
+  path: /mnt/mahzen/puren/open_vla_data_img_action_embeddings
+

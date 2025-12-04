@@ -1,0 +1,11 @@
+# @package _global_
+inputs:
+  name: img_only
+  use_image: true
+  use_action: false
+  
+  # Input dimensions
+  img_dim: 2176
+  action_dim: 0  # Not used
+  total_dim: ${inputs.img_dim}  # For models that need single input_dim
+

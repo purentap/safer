@@ -1,0 +1,13 @@
+# @package _global_
+# Default LSTM config - can be overridden by more specific configs
+model:
+  class_name: LSTMModel
+  type: lstm
+  
+  params:
+    # Model architecture parameters (LSTMModel takes cfg object)
+    input_dim: ${inputs.total_dim}
+    hidden_dim: 256
+    num_layers: 1
+    output_dim: 1
+

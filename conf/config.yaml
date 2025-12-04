@@ -1,0 +1,34 @@
+defaults:
+  - model: lstm_img
+  - inputs: img_only
+  - dataset: default
+
+# Training hyperparameters
+training:
+  n_epochs: 300
+  batch_size: 16
+  learning_rate: 0.001
+  lambda_reg: 0.01
+  use_scheduler: false
+  save_best_model: false
+# Optimizer configuration
+optimizer:
+  type: Adam  # Adam, AdamW, SGD
+  lr: ${training.learning_rate}
+  weight_decay: 0.0
+
+# Scheduler configuration
+scheduler:
+  type: CosineAnnealingLR  # CosineAnnealingLR, StepLR, None
+  T_max: ${training.n_epochs}
+  eta_min: 1e-4
+
+# Experiment tracking
+wandb:
+  project: deneme
+  group: null  # Will be set automatically or can be overridden
+  name: null   # Will be set automatically or can be overridden
+  enabled: true
+
+# Random seed
+seed: 0

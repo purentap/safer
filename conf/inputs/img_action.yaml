@@ -1,0 +1,11 @@
+# @package _global_
+inputs:
+  name: img_action
+  use_image: true
+  use_action: true
+  
+  # Input dimensions
+  img_dim: 2176
+  action_dim: 4096
+  total_dim: 6272  # img_dim + action_dim = 2176 + 4096
+

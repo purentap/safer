@@ -1,0 +1,36 @@
+model:
+  class_name: LSTMModel
+  type: lstm
+  input_dim: ${inputs.img_dim}
+  hidden_dim: 256
+  num_layers: 1
+  output_dim: 1
+inputs:
+  use_image: true
+  use_action: false
+  img_dim: 2176
+  action_dim: 0
+  total_dim: ${inputs.img_dim}
+dataset:
+  path: /mnt/mahzen/puren/open_vla_data_img_action_embeddings
+training:
+  n_epochs: 300
+  batch_size: 16
+  learning_rate: 0.001
+  lambda_reg: 0.01
+  scheduler_min_lr: 0.0001
+  use_scheduler: false
+optimizer:
+  type: Adam
+  lr: ${training.learning_rate}
+  weight_decay: 0.0
+scheduler:
+  type: CosineAnnealingLR
+  T_max: ${training.n_epochs}
+  eta_min: ${training.scheduler_min_lr}
+wandb:
+  project: deneme
+  group: null
+  name: null
+  enabled: false
+seed: 0
