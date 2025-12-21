@@ -90,3 +90,19 @@ The configuration uses Hydra's composition feature:
 - **img_only**: Uses only image embeddings (2176 dim)
 - **img_action**: Uses both image (2176 dim) and action (4096 dim) embeddings
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

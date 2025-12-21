@@ -1,0 +1,14 @@
+# @package _global_
+model:
+  class_name: FusionLSTMModel_v2
+  type: fusion_lstm
+  
+  params:
+    # Model architecture parameters
+    img_dim: 2176
+    action_dim: 4096
+    lstm_hidden_dim: 256
+    gate_hidden_dim: 64
+    use_gate: true  # Enable adaptive learnable weights
+    output_dim: 1
+

@@ -6,13 +6,14 @@ import numpy as np
 import torch
 import random
 from data import RolloutData
-from model import MLPModel, LSTMModel, FusionLSTMModel
+from model import MLPModel, LSTMModel, FusionLSTMModel, FusionLSTMModel_v2
 data_path = "/mnt/mahzen/puren/open_vla_data_all/rollouts/single-foward/libero_10"
 
 model_classes = {
     "mlp": MLPModel,
     "LSTMModel": LSTMModel,
-    "FusionLSTMModel": FusionLSTMModel
+    "FusionLSTMModel": FusionLSTMModel,
+    "FusionLSTMModel_v2": FusionLSTMModel_v2
 }
 
 optimizer_classes = {

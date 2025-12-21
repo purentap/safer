@@ -1,5 +1,5 @@
 defaults:
-  - model: lstm_img
+  - model: lstm_img_action
   - dataset: default
 
 # Training hyperparameters
@@ -7,8 +7,8 @@ training:
   n_epochs: 500
   batch_size: 16
   learning_rate: 0.001
-  lambda_reg: 0.01
-  use_scheduler: false
+  lambda_reg: 0.1
+  use_scheduler: true
   save_best_model: false
 # Optimizer configuration
 optimizer:
@@ -24,10 +24,10 @@ scheduler:
 
 # Experiment tracking
 wandb:
-  project: img_embeddings_auc_sweep
+  project: img_action_auc_sweep
   group: null  # Will be set automatically or can be overridden
   name: null   # Will be set automatically or can be overridden
-  enabled: false
+  enabled: true
 
 # Random seed
 seed: 0
