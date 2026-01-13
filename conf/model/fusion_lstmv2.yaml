@@ -8,7 +8,7 @@ model:
     img_dim: 2176
     action_dim: 4096
     lstm_hidden_dim: 256
-    gate_hidden_dim: 64
+    gate_hidden_dim: 512
     use_gate: true  # Enable adaptive learnable weights
     output_dim: 1
 

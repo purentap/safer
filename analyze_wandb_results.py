@@ -13,7 +13,7 @@ from collections import defaultdict
 api = wandb.Api()
 
 # Set your project name
-PROJECT_NAME = "img_embeddings_auc_sweep"  # Update this to match your project
+PROJECT_NAME = "fusion_lstmv2_cosine_annealing_sweep_batch_16_epochs_200"  # Update this to match your project
 POLICY = "OPENVLA"
 
 def _extract_scalar_from_summary_value(value):
@@ -151,7 +151,6 @@ def print_results_table(df, metric_name="auc_by_min_task_step/val_seen"):
 
 
 if __name__ == "__main__":
-
     metrics = ["auc_by_min_task_step/val_seen", "auc_by_min_task_step/val_unseen_at_best_val_seen"]
     # Create a summary table with all metrics
     print("\n" + "="*80)

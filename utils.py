@@ -43,6 +43,8 @@ def create_scheduler(optimizer, cfg):
         scheduler_class = scheduler_config.type
         if scheduler_class == "CosineAnnealingLR":
             return torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=scheduler_config.T_max, eta_min=scheduler_config.eta_min)
+        elif scheduler_class == "StepLRonPlateau":
+            return torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=scheduler_config.factor, patience=scheduler_config.patience, min_lr=scheduler_config.min_lr)
         else:
             raise ValueError(f"Unknown scheduler type: {scheduler_class}")
     else:

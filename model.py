@@ -78,7 +78,6 @@ class FusionLSTMModel(nn.Module):
         
         x = torch.cat([img_embeddings, action_embeddings], dim=-1)
         learned_weight = self.img_weight(x)
-        print(learned_weight.shape)
         img_embeddings = img_embeddings * learned_weight
         action_embeddings = action_embeddings * (1 - learned_weight)
         concat_input = torch.cat([img_embeddings, action_embeddings], dim=-1)
@@ -96,17 +95,17 @@ class FusionLSTMModel_v2(nn.Module):
         self.img_weight = nn.Sequential(
             nn.Linear(cfg.img_dim, cfg.gate_hidden_dim),
             nn.ReLU(),
-            nn.Dropout(p=0.3),
+            #nn.Dropout(p=0.3),
             nn.Linear(cfg.gate_hidden_dim, 1),
-            nn.Dropout(p=0.3),
+            #nn.Dropout(p=0.3),
             nn.Sigmoid(),
         )
         self.action_weight = nn.Sequential(
             nn.Linear(cfg.action_dim, cfg.gate_hidden_dim),
             nn.ReLU(),
-            nn.Dropout(p=0.3),
+            #nn.Dropout(p=0.3),
             nn.Linear(cfg.gate_hidden_dim, 1),
-            nn.Dropout(p=0.3),
+            #nn.Dropout(p=0.3),
             nn.Sigmoid(),
         )
         self.lstm = nn.LSTM(concat_dim, cfg.lstm_hidden_dim, num_layers=1,  batch_first=True)

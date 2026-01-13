@@ -9,7 +9,7 @@ from torch.optim.lr_scheduler import StepLR
 import wandb 
 import hydra
 from omegaconf import DictConfig, OmegaConf
-
+import torch.optim as optim
 @hydra.main(version_base=None, config_path="conf", config_name="config")
 def main(cfg: DictConfig):
     print(cfg)
@@ -25,7 +25,8 @@ def main(cfg: DictConfig):
     lr_str = f"{cfg.training.learning_rate:.0e}".replace("e-0", "e-")
     lambda_str = f"{cfg.training.lambda_reg:.0e}".replace("e-0", "e-")
     scheduler_str = f"_scheduler_{cfg.scheduler.type}_{cfg.scheduler.eta_min:.0e}".replace("e-0", "e-") if cfg.training.use_scheduler else "No_scheduler"
-    wandb_group = cfg.wandb.group or f"{cfg.model.type}_lr_{lr_str}_lambda_{lambda_str}_{scheduler_str}"
+    epochs_str = f"_epochs_{cfg.training.n_epochs}"
+    wandb_group = cfg.wandb.group or f"{cfg.model.type}_lr_{lr_str}_lambda_{lambda_str}_{scheduler_str}{epochs_str}"
     
     # Run name includes seed to distinguish runs within the same group
     wandb_name = cfg.wandb.name or f"seed_{cfg.seed}"
@@ -77,6 +78,7 @@ def main(cfg: DictConfig):
     ## END OF OPTIMIZER INSTANTIATION ##
 
     ## SCHEDULER INSTANTIATION ##
+    #scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.3, patience=10)
     scheduler = utils.create_scheduler(optimizer, cfg)
     print(scheduler)
     ## END OF SCHEDULER INSTANTIATION ##
@@ -95,7 +97,7 @@ def main(cfg: DictConfig):
 
         if scheduler:
             scheduler.step()
-
+            #scheduler.step(loss)
         #Evaluation
         model.eval()
         logs, classification_logs, loss_logs = eval_epoch(model, dataloader_by_split_name,splitted_rollouts, device)

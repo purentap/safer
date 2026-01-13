@@ -11,3 +11,4 @@ model:
     hidden_dim: 256
     num_layers: 1
     output_dim: 1
+    mode: img
