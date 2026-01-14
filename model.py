@@ -93,18 +93,18 @@ class FusionLSTMModel_v2(nn.Module):
         concat_dim = cfg.img_dim + cfg.action_dim
 
         self.img_weight = nn.Sequential(
-            nn.Linear(cfg.img_dim, cfg.gate_hidden_dim),
-            nn.ReLU(),
+            nn.Linear(cfg.img_dim, 1),
+            #nn.ReLU(),
             #nn.Dropout(p=0.3),
-            nn.Linear(cfg.gate_hidden_dim, 1),
+            #nn.Linear(cfg.gate_hidden_dim, 1),
             #nn.Dropout(p=0.3),
             nn.Sigmoid(),
         )
         self.action_weight = nn.Sequential(
-            nn.Linear(cfg.action_dim, cfg.gate_hidden_dim),
-            nn.ReLU(),
+            nn.Linear(cfg.action_dim, 1),
+            #nn.ReLU(),
             #nn.Dropout(p=0.3),
-            nn.Linear(cfg.gate_hidden_dim, 1),
+            #nn.Linear(cfg.gate_hidden_dim, 1),
             #nn.Dropout(p=0.3),
             nn.Sigmoid(),
         )

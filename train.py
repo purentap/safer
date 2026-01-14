@@ -32,7 +32,7 @@ def main(cfg: DictConfig):
     wandb_name = cfg.wandb.name or f"seed_{cfg.seed}"
     print(wandb_group, wandb_name)
     if cfg.wandb.enabled:
-        wandb.init(project=cfg.wandb.project, group=wandb_group, config=wandb_config, name=wandb_name)
+        wandb.init(project=cfg.wandb.project, group=wandb_group, config=wandb_config, name=wandb_name, reinit=True)
         wandb.define_metric("auc_by_min_task_step/*", step_metric="epoch", summary="max")
         wandb.define_metric("eval_loss/*", step_metric="epoch", summary="min")
         wandb.define_metric("eval_avg_fail_loss/*", step_metric="epoch", summary="min")
@@ -44,7 +44,7 @@ def main(cfg: DictConfig):
         wandb.define_metric("train_avg_success_loss", step_metric="epoch", summary="min")
         wandb.run.log_code(root=".")
     ## END OF WANDB CONFIGURATION ##
-
+    
     ## DATA LOADING ##
     
     rollouts = utils.load_data(cfg.dataset.path)
@@ -127,12 +127,12 @@ def main(cfg: DictConfig):
                 wandb.log({"lr": scheduler.get_last_lr()[0]})
             else:
                 wandb.log({"lr": optimizer.param_groups[0]['lr']})
-    
-    
+
     if cfg.wandb.enabled:
         wandb.summary["auc_by_min_task_step/val_unseen_at_best_val_seen"] = best_val_unseen_auc
         wandb.summary["best_epoch"] = best_epoch
         wandb.finish()  # Properly end the wandb run        
+
     return
 
 if __name__ == "__main__":

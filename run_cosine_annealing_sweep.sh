@@ -8,65 +8,76 @@
 
 # Customize these values as needed:
 MODEL="fusion_lstmv2"
-#INPUTS="img_only"
-LAMBDA_REGS="0.1,0.01,0.001"
+LAMBDA_REGS="1e-3,1e-2,1e-1,1"
 SEEDS="0,1,2"
-EPOCHS="200"
-BATCH_SIZE="16"
-PROJECT_NAME="${MODEL}_hidden_dim_512_cosine_annealing_sweep_batch_${BATCH_SIZE}_epochs_${EPOCHS}"
-echo "Starting hyperparameter sweep with Cosine Annealing Scheduler..."
-echo "Model: ${MODEL}"
-echo "Batch size: ${BATCH_SIZE}"
-echo "Epochs: ${EPOCHS}"
-echo "Learning rate ranges:"
-echo "  1. 0.01 -> 0.001"
-echo "  2. 0.001 -> 0.0001"
-echo "  3. 0.01 -> 0.0001"
-echo "Lambda regs: ${LAMBDA_REGS}"
-echo "Seeds: ${SEEDS}"
-echo "Project name: ${PROJECT_NAME}"
-echo ""
+EPOCHS="100"
+BATCH_SIZE="64"
+LEARNING_RATES="3e-4,1e-3" #1e-4,3e-4,1e-3
 
-# Run three separate training configurations with paired LR start/end values
-# Each configuration will run all combinations of lambda_reg and seeds
-
-# Configuration 1: LR 0.01 -> 0.001
-echo "Running Configuration 1: LR 0.01 -> 0.001"
+#for MODEL in "lstm_img" "lstm_img_action" "fusion_lstm"; do
 python train.py -m \
     model="${MODEL}" \
-    training.use_scheduler=true \
-    training.learning_rate=0.01 \
-    scheduler.eta_min=0.001 \
+    training.use_scheduler=false \
+    training.learning_rate=${LEARNING_RATES} \
+    training.batch_size="${BATCH_SIZE}" \
     training.lambda_reg="${LAMBDA_REGS}" \
-    wandb.project=${PROJECT_NAME} \
-    seed="${SEEDS}"\
-    training.n_epochs="${EPOCHS}" \
-    training.batch_size="${BATCH_SIZE}"
+    wandb.project="${MODEL}_noscheduler_sweep_batch_${BATCH_SIZE}_epochs_${EPOCHS}" \
+    seed=${SEEDS} \
+    training.n_epochs=${EPOCHS}
+#done
+# echo "Starting hyperparameter sweep with Cosine Annealing Scheduler..."
+# echo "Model: ${MODEL}"
+# echo "Batch size: ${BATCH_SIZE}"
+# echo "Epochs: ${EPOCHS}"
+# echo "Learning rate ranges:"
+# echo "  1. 0.01 -> 0.001"
+# echo "  2. 0.001 -> 0.0001"
+# echo "  3. 0.01 -> 0.0001"
+# echo "Lambda regs: ${LAMBDA_REGS}"
+# echo "Seeds: ${SEEDS}"
+# echo "Project name: ${PROJECT_NAME}"
+# echo ""
 
-# Configuration 2: LR 0.001 -> 0.0001
-echo "Running Configuration 2: LR 0.001 -> 0.0001"
-python train.py -m \
-    model="${MODEL}" \
-    training.use_scheduler=true \
-    training.learning_rate=0.001 \
-    scheduler.eta_min=0.0001 \
-    training.lambda_reg="${LAMBDA_REGS}" \
-    wandb.project=${PROJECT_NAME} \
-    seed="${SEEDS}" \
-    training.n_epochs="${EPOCHS}" \
-    training.batch_size="${BATCH_SIZE}"
+# # Run three separate training configurations with paired LR start/end values
+# # Each configuration will run all combinations of lambda_reg and seeds
 
-# Configuration 3: LR 0.01 -> 0.0001
-echo "Running Configuration 3: LR 0.01 -> 0.0001"
-python train.py -m \
-    model="${MODEL}" \
-    training.use_scheduler=true \
-    training.learning_rate=0.01 \
-    scheduler.eta_min=0.0001 \
-    training.lambda_reg="${LAMBDA_REGS}" \
-    wandb.project=${PROJECT_NAME} \
-    seed="${SEEDS}" \
-    training.n_epochs="${EPOCHS}" \
-    training.batch_size="${BATCH_SIZE}"
+# # Configuration 1: LR 0.01 -> 0.001
+# echo "Running Configuration 1: LR 0.01 -> 0.001"
+# python train.py -m \
+#     model="${MODEL}" \
+#     training.use_scheduler=true \
+#     training.learning_rate=0.01 \
+#     scheduler.eta_min=0.001 \
+#     training.lambda_reg="${LAMBDA_REGS}" \
+#     wandb.project=${PROJECT_NAME} \
+#     seed="${SEEDS}"\
+#     training.n_epochs="${EPOCHS}" \
+#     training.batch_size="${BATCH_SIZE}"
 
-echo "All training configurations completed!"
+# # Configuration 2: LR 0.001 -> 0.0001
+# echo "Running Configuration 2: LR 0.001 -> 0.0001"
+# python train.py -m \
+#     model="${MODEL}" \
+#     training.use_scheduler=true \
+#     training.learning_rate=0.001 \
+#     scheduler.eta_min=0.0001 \
+#     training.lambda_reg="${LAMBDA_REGS}" \
+#     wandb.project=${PROJECT_NAME} \
+#     seed="${SEEDS}" \
+#     training.n_epochs="${EPOCHS}" \
+#     training.batch_size="${BATCH_SIZE}"
+
+# # Configuration 3: LR 0.01 -> 0.0001
+# echo "Running Configuration 3: LR 0.01 -> 0.0001"
+# python train.py -m \
+#     model="${MODEL}" \
+#     training.use_scheduler=true \
+#     training.learning_rate=0.01 \
+#     scheduler.eta_min=0.0001 \
+#     training.lambda_reg="${LAMBDA_REGS}" \
+#     wandb.project=${PROJECT_NAME} \
+#     seed="${SEEDS}" \
+#     training.n_epochs="${EPOCHS}" \
+#     training.batch_size="${BATCH_SIZE}"
+
+# echo "All training configurations completed!"

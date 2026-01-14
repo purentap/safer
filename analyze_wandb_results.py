@@ -13,7 +13,7 @@ from collections import defaultdict
 api = wandb.Api()
 
 # Set your project name
-PROJECT_NAME = "fusion_lstmv2_cosine_annealing_sweep_batch_16_epochs_200"  # Update this to match your project
+PROJECT_NAME = "fusion_lstm_noscheduler_sweep_batch_64_epochs_100"  # Update this to match your project
 POLICY = "OPENVLA"
 
 def _extract_scalar_from_summary_value(value):
