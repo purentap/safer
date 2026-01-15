@@ -8,7 +8,7 @@ training:
   batch_size: 64
   learning_rate: 0.001
   lambda_reg: 0.01
-  use_scheduler: true
+  use_scheduler: false
   save_best_model: false
 # Optimizer configuration
 optimizer:
@@ -29,7 +29,7 @@ wandb:
   project: architecture_comparison
   group: null  # Will be set automatically or can be overridden
   name: null   # Will be set automatically or can be overridden
-  enabled: true
+  enabled: false
 
 # Random seed
 seed: 0

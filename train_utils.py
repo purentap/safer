@@ -113,12 +113,12 @@ def train_epoch(model, opt, dataloader, device, lambda_reg, model_type):
     return losses, reg_loss, fail_succ_loss, avg_fail_loss, avg_success_loss
     
 
-def eval_epoch(model, dataloader_by_split_name, rollouts_by_split_name, device):
+def eval_epoch(model, dataloader_by_split_name, rollouts_by_split_name, device, batch_size=64):
     scores_by_split_name = {}
     loss_logs = {}
     for split, dataloader in dataloader_by_split_name.items():
         #re-create dataloader to disable shuffling
-        dataloader = DataLoader(dataloader.dataset, batch_size = 64, shuffle=False, num_workers =0)
+        dataloader = DataLoader(dataloader.dataset, batch_size = batch_size, shuffle=False, num_workers =0)
         
         weights = dataloader.dataset.weights #gets per class weights
 

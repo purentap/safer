@@ -10,6 +10,7 @@ import wandb
 import hydra
 from omegaconf import DictConfig, OmegaConf
 import torch.optim as optim
+import numpy as np
 @hydra.main(version_base=None, config_path="conf", config_name="config")
 def main(cfg: DictConfig):
     print(cfg)
@@ -100,7 +101,7 @@ def main(cfg: DictConfig):
             #scheduler.step(loss)
         #Evaluation
         model.eval()
-        logs, classification_logs, loss_logs = eval_epoch(model, dataloader_by_split_name,splitted_rollouts, device)
+        logs, classification_logs, loss_logs = eval_epoch(model, dataloader_by_split_name,splitted_rollouts, device, batch_size=cfg.training.batch_size)
         auc_seen = logs["auc_by_min_task_step/val_seen"]
         auc_unseen = logs.get("auc_by_min_task_step/val_unseen", 0)  # Get val_unseen if it exists
 
