@@ -12,7 +12,7 @@ LAMBDA_REGS=""1e-3,1e-2,1e-1,1"" #
 SEEDS="0,1,2"
 EPOCHS="100"
 BATCH_SIZE="64"
-LEARNING_RATES="1e-4,3e-4,1e-3,1e-5" #1e-4,3e-4,1e-3,1e-5
+LEARNING_RATES="1e-5,1e-4,3e-4,1e-3" #1e-4,3e-4,1e-3,1e-5
 
 #for MODEL in "lstm_img" "lstm_img_action" "fusion_lstm"; do
 python train.py -m \
@@ -21,7 +21,7 @@ python train.py -m \
     training.learning_rate=${LEARNING_RATES} \
     training.batch_size="${BATCH_SIZE}" \
     training.lambda_reg="${LAMBDA_REGS}" \
-    wandb.project="${MODEL}_HIDDENDIM32DROPOUT_noscheduler_sweep_batch_${BATCH_SIZE}_epochs_${EPOCHS}" \
+    wandb.project="${MODEL}_HIDDENDIM256wDROPOUT_GATEDIM256_noscheduler_sweep_batch_${BATCH_SIZE}_epochs_${EPOCHS}" \
     wandb.enabled=true \
     seed=${SEEDS} \
     training.n_epochs=${EPOCHS}

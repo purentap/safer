@@ -104,7 +104,7 @@ def train_epoch(model, opt, dataloader, device, lambda_reg, model_type):
         fail_succ_losses.append(fail_succ_loss.item())
         avg_fail_losses.append(avg_fail_loss.item())
         avg_success_losses.append(avg_success_loss.item())
-    
+        
     losses = sum(batch_losses) / len(batch_losses)
     reg_loss = sum(reg_losses) / len(reg_losses)
     fail_succ_loss = sum(fail_succ_losses) / len(fail_succ_losses)
