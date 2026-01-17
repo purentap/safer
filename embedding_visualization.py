@@ -1,12 +1,21 @@
-from utils import load_data
+from utils import load_data, load_data_pi0
 from sklearn.manifold import TSNE
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 
-data_path = "/mnt/mahzen/puren/open_vla_data_all/rollouts/single-foward/libero_10"
+#data_path = "/mnt/mahzen/puren/open_vla_data_all/rollouts/single-foward/libero_10" #openvla
+data_path = "/mnt/mahzen/puren/research_data/pi0_data/pi0-libero_10" #pi0
+
 save_folder = "./visualizations"
-rollouts = load_data(data_path)
+rollouts = load_data_pi0(data_path)
+
+print(rollouts[5])
+print(rollouts[5].get_img_embeddings().shape)
+print(rollouts[5].get_action_embeddings().shape)
+print(rollouts[5].get_episode_success())
+print(rollouts[5].get_task_id())
+print(rollouts[5].get_episode_idx())
 rollouts= sorted(rollouts, key=lambda x: (x.get_task_id(), x.get_episode_idx()))
 print("Data loaded successfully")
 
@@ -36,6 +45,7 @@ projector = TSNE(n_components=2)
 feats_projected = projector.fit_transform(feats)
 print(f"feats_projected: {feats_projected.shape} {feats_projected.dtype}")
 
+#
 '''Visualize projected features and save as images'''
 # Compute the color vector
 task_ids = []
@@ -62,7 +72,7 @@ plt.scatter(
 )
 plt.axis("off"); plt.tight_layout()
 plt.gca().set_aspect('equal', adjustable='box')
-plt.savefig(f"{save_folder}/feats_vis_skip{feat_skip}-succ.png", bbox_inches='tight')
+plt.savefig(f"{save_folder}/pi0_feats_vis_skip{feat_skip}-succ.png", bbox_inches='tight')
 plt.close()
 
 
@@ -90,3 +100,4 @@ plt.axis("off"); plt.tight_layout()
 plt.gca().set_aspect('equal', adjustable='box')
 plt.savefig(f"{save_folder}/feats_vis_skip{feat_skip}-taskid.png", bbox_inches='tight')
 plt.close()
+

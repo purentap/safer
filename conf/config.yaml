@@ -1,5 +1,5 @@
 defaults:
-  - model: fusion_lstm
+  - model: fusion_lstmv2
   - dataset: default
 
 # Training hyperparameters
@@ -10,6 +10,7 @@ training:
   lambda_reg: 0.01
   use_scheduler: false
   save_best_model: false
+  normalize_hidden_states: true
 # Optimizer configuration
 optimizer:
   type: Adam  # Adam, AdamW, SGD

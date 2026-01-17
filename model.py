@@ -97,30 +97,39 @@ class FusionLSTMModel_v2(nn.Module):
         concat_dim = cfg.img_dim + cfg.action_dim
 
         self.img_weight = nn.Sequential(
-            nn.Linear(cfg.img_dim, 1),
+            nn.Linear(cfg.img_dim, 256),
             #nn.ReLU(),
             #nn.Dropout(p=0.3),
             #nn.Linear(cfg.gate_hidden_dim, 1),
             #nn.Dropout(p=0.3),
-            nn.Sigmoid(),
+            nn.Tanh(),
         )
         self.action_weight = nn.Sequential(
-            nn.Linear(cfg.action_dim, 1),
+            nn.Linear(cfg.action_dim, 256),
             #nn.ReLU(),
             #nn.Dropout(p=0.3),
             #nn.Linear(cfg.gate_hidden_dim, 1),
             #nn.Dropout(p=0.3),
+            nn.Tanh(),
+        )
+        self.fusion_weight = nn.Sequential(
+            nn.Linear(concat_dim, 256),
             nn.Sigmoid(),
         )
-        self.lstm = nn.LSTM(concat_dim, cfg.lstm_hidden_dim, num_layers=1,  batch_first=True)
+        self.lstm = nn.LSTM(256, cfg.lstm_hidden_dim, num_layers=1,  batch_first=True)
         self.fc = nn.Linear(cfg.lstm_hidden_dim, cfg.output_dim)
+        self.dropout = nn.Dropout(p=0.3)
+        self.tanh = nn.Tanh()
     def forward(self, img_embeddings, action_embeddings):
-        img_weights = self.img_weight(img_embeddings)
-        action_weights = self.action_weight(action_embeddings)
-        img_embeddings = img_embeddings * img_weights
-        action_embeddings = action_embeddings * action_weights
+        img_hidden_state= self.img_weight(img_embeddings)
+        action_hidden_state = self.action_weight(action_embeddings)
+        #img_hidden_state = self.tanh(img_hidden_state)
+        #action_hidden_state = self.tanh(action_hidden_state)
         concat_input = torch.cat([img_embeddings, action_embeddings], dim=-1)
-        out, _ = self.lstm(concat_input)
+        z = self.fusion_weight(concat_input)
+        hidden_state = img_hidden_state * z + action_hidden_state * (1 - z)
+        out, _ = self.lstm(hidden_state)
+        out = self.dropout(out)
         out = torch.sigmoid(self.fc(out))
         return out
     

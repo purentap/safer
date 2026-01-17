@@ -7,12 +7,12 @@
 # 3. LR: 0.0001 -> 0.00001
 
 # Customize these values as needed:
-MODEL="fusion_lstm"
+MODEL="fusion_lstmv2"
 LAMBDA_REGS=""1e-3,1e-2,1e-1,1"" #
 SEEDS="0,1,2"
 EPOCHS="100"
 BATCH_SIZE="64"
-LEARNING_RATES="1e-5,1e-4,3e-4,1e-3" #1e-4,3e-4,1e-3,1e-5
+LEARNING_RATES="1e-5,1e-4,3e-4,1e-3" #1e-5, 1e-4,3e-4,1e-3,1e-5
 
 #for MODEL in "lstm_img" "lstm_img_action" "fusion_lstm"; do
 python train.py -m \

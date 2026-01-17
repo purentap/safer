@@ -16,6 +16,7 @@ def main(cfg: DictConfig):
     print(cfg)
     
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    #device = "cpu"
     utils.seed_everything(cfg.seed)
 
     ## WANDB CONFIGURATION ##
@@ -52,11 +53,12 @@ def main(cfg: DictConfig):
     splitted_rollouts = utils.split_rollouts(rollouts)
 
     # Construct datasets and dataloaders from the rollouts
-
     dataset_by_split_name = {
         k: RolloutDataset(v) 
         for k, v in splitted_rollouts.items()
     }
+    #if cfg.training.normalize_hidden_states:
+    #    dataset_by_split_name = utils.normalize_rollouts_hidden_states(dataset_by_split_name)
 
     dataloader_by_split_name = {
         k: DataLoader(
