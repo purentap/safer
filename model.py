@@ -97,7 +97,8 @@ class FusionLSTMModel_v2(nn.Module):
         concat_dim = cfg.img_dim + cfg.action_dim
 
         self.img_weight = nn.Sequential(
-            nn.Linear(cfg.img_dim, 256),
+            nn.Dropout(p=0.3),
+            nn.Linear(cfg.img_dim, 128),
             #nn.ReLU(),
             #nn.Dropout(p=0.3),
             #nn.Linear(cfg.gate_hidden_dim, 1),
@@ -105,7 +106,8 @@ class FusionLSTMModel_v2(nn.Module):
             nn.Tanh(),
         )
         self.action_weight = nn.Sequential(
-            nn.Linear(cfg.action_dim, 256),
+            nn.Dropout(p=0.3),
+            nn.Linear(cfg.action_dim, 128),
             #nn.ReLU(),
             #nn.Dropout(p=0.3),
             #nn.Linear(cfg.gate_hidden_dim, 1),
@@ -113,10 +115,10 @@ class FusionLSTMModel_v2(nn.Module):
             nn.Tanh(),
         )
         self.fusion_weight = nn.Sequential(
-            nn.Linear(concat_dim, 256),
+            nn.Linear(concat_dim, 128),
             nn.Sigmoid(),
         )
-        self.lstm = nn.LSTM(256, cfg.lstm_hidden_dim, num_layers=1,  batch_first=True)
+        self.lstm = nn.LSTM(128, cfg.lstm_hidden_dim, num_layers=1,  batch_first=True)
         self.fc = nn.Linear(cfg.lstm_hidden_dim, cfg.output_dim)
         self.dropout = nn.Dropout(p=0.3)
         self.tanh = nn.Tanh()
