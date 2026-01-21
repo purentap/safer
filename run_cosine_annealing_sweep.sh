@@ -7,7 +7,7 @@
 # 3. LR: 0.0001 -> 0.00001
 
 # Customize these values as needed:
-MODEL="fusion_lstmv2"
+MODEL="lstm_img_action"
 LAMBDA_REGS=""1e-3,1e-2,1e-1,1"" #
 SEEDS="0,1,2"
 EPOCHS="200"
@@ -21,7 +21,7 @@ python train.py -m \
     training.learning_rate=${LEARNING_RATES} \
     training.batch_size="${BATCH_SIZE}" \
     training.lambda_reg="${LAMBDA_REGS}" \
-    wandb.project="${MODEL}_HIDDENDIM64wMultipleDROPOUT_GATEDIM128_noscheduler_sweep_batch_${BATCH_SIZE}_epochs_${EPOCHS}" \
+    wandb.project="${MODEL}wDropout_noscheduler_sweep_batch_${BATCH_SIZE}_epochs_${EPOCHS}" \
     wandb.enabled=true \
     seed=${SEEDS} \
     training.n_epochs=${EPOCHS}

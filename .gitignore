@@ -11,6 +11,7 @@ __pycache__/
 *.pyzwz
 *.pyzwzw
 *.pyzwzwz
+*.csv
 outputs/
 visualizations/
 multirun/

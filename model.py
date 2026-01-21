@@ -29,6 +29,7 @@ class LSTMModel(nn.Module):
         super(LSTMModel, self).__init__()
         self.lstm = nn.LSTM(cfg.input_dim, cfg.hidden_dim, cfg.num_layers,  batch_first=True, )
         self.fc = nn.Linear(cfg.hidden_dim, cfg.output_dim)
+        self.dropout = nn.Dropout(p=0.3)
         if cfg.mode == "img_action": 
             self.mode = "img_action"
         else:
@@ -40,6 +41,7 @@ class LSTMModel(nn.Module):
         else:
             x = img_embeddings
         out, _ = self.lstm(x)
+        out = self.dropout(out)
         out = torch.sigmoid(self.fc(out))
         return out
 

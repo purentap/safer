@@ -88,7 +88,7 @@ def main(cfg: DictConfig):
 
     pbar = trange(cfg.training.n_epochs)
     train_dataloader = dataloader_by_split_name["train"]
-    best_auc_so_far = 0
+    best_auc_so_far, auc_seen, auc_unseen = 0, 0, 0
     best_epoch = 0
     best_val_unseen_auc = 0  # Track val_unseen at best val_seen epoch
 
@@ -101,6 +101,8 @@ def main(cfg: DictConfig):
         if scheduler:
             scheduler.step()
             #scheduler.step(loss)
+        
+        #if epoch % 25 == 0 or epoch == cfg.training.n_epochs - 1:
         #Evaluation
         model.eval()
         logs, classification_logs, loss_logs = eval_epoch(model, dataloader_by_split_name,splitted_rollouts, device, batch_size=cfg.training.batch_size)
@@ -118,14 +120,16 @@ def main(cfg: DictConfig):
                 wandb.log({"classify_functional_cp/": wandb.Table(dataframe=classification_logs)})
         
         if cfg.wandb.enabled:
-            wandb.log({"epoch": epoch})
             wandb.log(logs)
+            wandb.log({"auc_seen": auc_seen})
+            wandb.log({"auc_unseen": auc_unseen})
+            wandb.log(loss_logs)
+            wandb.log({"epoch": epoch})
             wandb.log({"train_loss": loss})
             wandb.log({"train_fail_succ_loss(wo regularization)": fail_succ_loss})
             wandb.log({"reg_loss": reg_loss})
             wandb.log({"train_avg_fail_loss": avg_fail_loss})
             wandb.log({"train_avg_success_loss": avg_success_loss})
-            wandb.log(loss_logs)
             if scheduler:
                 wandb.log({"lr": scheduler.get_last_lr()[0]})
             else:
