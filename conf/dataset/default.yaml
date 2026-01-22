@@ -1,4 +1,13 @@
 # @package _global_
 dataset:
-  path: /mnt/mahzen/puren/open_vla_data_img_action_embeddings
+  # path: /mnt/mahzen/puren/open_vla_data_img_action_embeddings
+  # device: cuda
+  # # dataset-wide split ratios
+  # unseen_task_ratio: 0.2
+  # seen_train_ratio: 0.8
+  # # feature dimensions
+  # hidden_feature_dim: 2176
+  # image_embedding_dim: 4096
+  # # convenience for models needing concatenated dim (img_action)
+  # total_input_dim: 6272  # 2176 + 4096
 

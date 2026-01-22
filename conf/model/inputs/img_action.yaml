@@ -5,7 +5,7 @@ inputs:
   use_action: true
   
   # Input dimensions
-  img_dim: 2176
-  action_dim: 4096
-  total_dim: 6272  # img_dim + action_dim = 2176 + 4096
+  img_dim: ${dataset.image_embedding_dim}
+  action_dim: ${dataset.hidden_feature_dim}
+  total_dim: ${dataset.total_input_dim}  # defined per-dataset
 

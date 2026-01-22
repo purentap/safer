@@ -5,7 +5,7 @@ inputs:
   use_action: false
   
   # Input dimensions
-  img_dim: 2176
+  img_dim: ${dataset.image_embedding_dim}
   action_dim: 0  # Not used
-  total_dim: ${inputs.img_dim}  # For models that need single input_dim
+  total_dim: ${dataset.image_embedding_dim} # For models that need single input_dim
 

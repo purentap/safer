@@ -25,11 +25,8 @@ class RolloutDataset(Dataset):
 
     def __init__(self, rollouts):
         self.rollouts = rollouts
-        padded_features, valid_masks, labels = pad_rollouts(rollouts, embedding_type="img")
-        padded_action_embeddings, valid_masks_action, _ = pad_rollouts(rollouts, embedding_type="action")
-        self.padded_features = torch.from_numpy(padded_features)
-        self.padded_action_embeddings = torch.from_numpy(padded_action_embeddings)
-        self.valid_masks = torch.from_numpy(valid_masks)
+        self.padded_features, self.valid_masks, labels = pad_rollouts(rollouts, embedding_type="img")
+        self.padded_action_embeddings, valid_masks_action, _ = pad_rollouts(rollouts, embedding_type="action")
         self.success_labels = torch.from_numpy(labels)
 
         # Weigh the loss by the frequency of success/failure
@@ -72,14 +69,14 @@ def pad_rollouts(rollouts, embedding_type="img"):
     dtype = all_embeddings[0].dtype
 
     # Pre-allocate output tensors
-    padded_features = np.zeros(
+    padded_features = torch.zeros(
         (batch_size, max_length, hidden_dim),
         dtype=dtype
     )
     
-    padding_masks = np.ones(
+    padding_masks = torch.ones(
         (batch_size, max_length),
-        dtype=np.float32
+        dtype=torch.float32
     )
     
     for i, seq in enumerate(all_embeddings):

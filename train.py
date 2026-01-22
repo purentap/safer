@@ -11,6 +11,7 @@ import hydra
 from omegaconf import DictConfig, OmegaConf
 import torch.optim as optim
 import numpy as np
+from datasets import get_dataset_handler
 @hydra.main(version_base=None, config_path="conf", config_name="config")
 def main(cfg: DictConfig):
     print(cfg)
@@ -49,9 +50,14 @@ def main(cfg: DictConfig):
     
     ## DATA LOADING ##
     
-    rollouts = utils.load_data(cfg.dataset.path)
-    splitted_rollouts = utils.split_rollouts(rollouts)
+    dataset_name = cfg.dataset.get("name", None) if hasattr(cfg, "dataset") else None
+    DatasetHandler = get_dataset_handler(dataset_name)
+    dataset_handler = DatasetHandler(cfg)
 
+    rollouts = dataset_handler.load_rollouts()
+    print(rollouts[0].get_img_embeddings().dtype)
+    print(rollouts[0].get_action_embeddings().dtype)
+    splitted_rollouts = dataset_handler.split_rollouts(rollouts)
     # Construct datasets and dataloaders from the rollouts
     dataset_by_split_name = {
         k: RolloutDataset(v) 

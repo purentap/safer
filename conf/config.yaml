@@ -1,6 +1,6 @@
 defaults:
-  - model: fusion_lstmv2
-  - dataset: default
+  - model: lstm_img
+  - dataset: pi0-libero
 
 # Training hyperparameters
 training:
