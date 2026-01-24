@@ -1,7 +1,8 @@
 import pickle
-path = "/mnt/mahzen/puren/research_data/pi0_data/pi0_safe_data/rollouts/pi0-libero_10/policy_records/step_9999--pi0-libero_10--task_3--ep_15--t_175--meta.pkl"
+path = "/mnt/mahzen/puren/research_data/simpler_env/rollouts/pizero_v1/bridge_beta_step19296_2024-12-26_22-30_42/widowx_carrot_on_plate/episode_96_success_True.pkl"
 with open(path, "rb") as f:
     data = pickle.load(f)
 
-print(data.keys())
+print(data[0]["sampled_action_embeds"].shape)
+print(data[0]["img_embeds"].shape)
 
