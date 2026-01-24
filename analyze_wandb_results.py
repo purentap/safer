@@ -13,8 +13,8 @@ from collections import defaultdict
 api = wandb.Api()
 
 # Set your project name
-PROJECT_NAME = "fusion_lstmv2_HIDDENDIM16wDROPOUT_GATEDIM64_noscheduler_sweep_batch_64_epochs_200"  # Update this to match your project
-POLICY = "OPENVLA"
+PROJECT_NAME = "lstm_img_pi0-libero_batch_64_epochs_200"  # Update this to match your project
+POLICY = "PI0"
 
 def _extract_scalar_from_summary_value(value):
     """

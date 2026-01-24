@@ -1,6 +1,6 @@
 defaults:
   - model: lstm_img
-  - dataset: pi0-libero
+  - dataset: open_pi0_simpler_bridge
 
 # Training hyperparameters
 training:
