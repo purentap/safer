@@ -21,9 +21,9 @@ class Pi0LiberoDatasetHandler(BaseDatasetHandler):
         self.seen_train_ratio = cfg.dataset.seen_train_ratio
         self.hidden_feature_dim = cfg.dataset.hidden_feature_dim
         self.image_embedding_dim = cfg.dataset.image_embedding_dim
-        self.total_input_dim = cfg.dataset.total_input_dim
         self.hidden_feat_name = cfg.dataset.hidden_feat_name
         self.img_embedding_name = cfg.dataset.img_embedding_name
+        self.total_input_dim = self.hidden_feature_dim + self.image_embedding_dim
     def load_rollouts(self):
         env_records_folder = os.path.join(self.path, "env_records")
         policy_records_folder = os.path.join(self.path, "policy_records")

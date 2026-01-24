@@ -1,5 +1,5 @@
 defaults:
-  - model: lstm_img
+  - model: lstm_img_action
   - dataset: pi0-libero
 
 # Training hyperparameters

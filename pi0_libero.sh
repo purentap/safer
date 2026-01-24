@@ -1,4 +1,4 @@
-MODEL="lstm_img"
+MODEL="fusion_lstmv2"
 LAMBDA_REGS=""1e-3,1e-2,1e-1,1"" #
 SEEDS="0,1,2"
 EPOCHS="200"

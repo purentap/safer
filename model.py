@@ -27,6 +27,7 @@ class MLPModel(nn.Module):
 class LSTMModel(nn.Module):
     def __init__(self, cfg):
         super(LSTMModel, self).__init__()
+        print("HERE" , cfg.input_dim)
         self.lstm = nn.LSTM(cfg.input_dim, cfg.hidden_dim, cfg.num_layers,  batch_first=True, )
         self.fc = nn.Linear(cfg.hidden_dim, cfg.output_dim)
         self.dropout = nn.Dropout(p=0.3)

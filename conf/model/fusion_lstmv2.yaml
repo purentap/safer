@@ -5,8 +5,8 @@ model:
   
   params:
     # Model architecture parameters
-    img_dim: ${dataset.hidden_feature_dim}
-    action_dim: ${dataset.image_embedding_dim}
+    img_dim: ${dataset.image_embedding_dim}
+    action_dim: ${dataset.hidden_feature_dim}
     lstm_hidden_dim: 64
     gate_hidden_dim: 32
     use_gate: true  # Enable adaptive learnable weights

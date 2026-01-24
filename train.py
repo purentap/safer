@@ -12,6 +12,8 @@ from omegaconf import DictConfig, OmegaConf
 import torch.optim as optim
 import numpy as np
 from datasets import get_dataset_handler
+# Register simple math resolvers for config interpolation
+OmegaConf.register_new_resolver("add", lambda a, b: int(a) + int(b))
 @hydra.main(version_base=None, config_path="conf", config_name="config")
 def main(cfg: DictConfig):
     print(cfg)
