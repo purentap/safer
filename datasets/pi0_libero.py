@@ -74,7 +74,6 @@ class Pi0LiberoDatasetHandler(BaseDatasetHandler):
                 diff_step_idx = round((hidden_state.shape[-2] - 1) * diff_idx)
 
                 hidden_state = hidden_state[..., diff_step_idx, : ]
-
                 hidden_states.append(hidden_state)
 
                 image_embedding = policy_record["prefix_tokens"].squeeze(0)

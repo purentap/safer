@@ -1,0 +1,11 @@
+# @package _global_
+dataset:
+  name: pi0fast-libero
+  path: /home/enes/puren/data/pi0fast_data/pi0fast_data/rollouts/pi0fast-libero_10
+  hidden_feat_name: encoded 
+  img_embedding_name: prefix_tokens
+  hidden_feature_dim: 2048
+  image_embedding_dim: 2048
+  total_input_dim: 4096
+  seen_train_ratio: 0.6
+  unseen_task_ratio: 0.3

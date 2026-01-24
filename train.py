@@ -58,7 +58,7 @@ def main(cfg: DictConfig):
     dataset_handler = DatasetHandler(cfg)
 
     rollouts = dataset_handler.load_rollouts()
-    
+    '''
     print(rollouts[0].get_img_embeddings().dtype)
     print(rollouts[0].get_action_embeddings().dtype)
     splitted_rollouts = dataset_handler.split_rollouts(rollouts)
@@ -151,6 +151,6 @@ def main(cfg: DictConfig):
         wandb.finish()  # Properly end the wandb run        
 
     return
-    
+    '''
 if __name__ == "__main__":
     main()
