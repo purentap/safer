@@ -2,12 +2,14 @@ from torch.utils.data import Dataset
 import torch
 import numpy as np
 class RolloutData:
-    def __init__(self, img_embeddings, action_embeddings, episode_success, task_id, episode_idx):
+    def __init__(self, img_embeddings, action_embeddings, episode_success, task_id, episode_idx, task_description=None, mp4_path=None):
         self.img_embeddings = img_embeddings
         self.action_embeddings = action_embeddings
         self.episode_success = episode_success
         self.task_id = task_id
         self.episode_idx = episode_idx
+        self.task_description = task_description
+        self.mp4_path = mp4_path
     def get_img_embeddings(self):
         return self.img_embeddings
     def get_action_embeddings(self):

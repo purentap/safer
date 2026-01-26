@@ -1,6 +1,6 @@
 defaults:
   - model: lstm_img
-  - dataset: open_pi0_simpler_fractal
+  - dataset: pi0fast_droid
 
 # Training hyperparameters
 training:

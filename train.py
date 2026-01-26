@@ -17,11 +17,11 @@ from datasets import get_dataset_handler
 OmegaConf.register_new_resolver("add", lambda a, b: int(a) + int(b))
 @hydra.main(version_base=None, config_path="conf", config_name="config")
 def main(cfg: DictConfig):
-    print(cfg)
+    #print(cfg)
     
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     #device = "cpu"
-    utils.seed_everything(cfg.seed)
+    #utils.seed_everything(cfg.seed)
 
     ## WANDB CONFIGURATION ##
     wandb_config = OmegaConf.to_container(cfg, resolve=True)
@@ -52,15 +52,19 @@ def main(cfg: DictConfig):
     ## END OF WANDB CONFIGURATION ##
     
     ## DATA LOADING ##
-    
+    utils.seed_everything(0)
     dataset_name = cfg.dataset.get("name", None) if hasattr(cfg, "dataset") else None
+    print(dataset_name)
     DatasetHandler = get_dataset_handler(dataset_name)
     dataset_handler = DatasetHandler(cfg)
 
     rollouts = dataset_handler.load_rollouts()
     
+    
     print(rollouts[0].get_img_embeddings().dtype)
     print(rollouts[0].get_action_embeddings().dtype)
+    utils.seed_everything(cfg.seed)
+
     splitted_rollouts = dataset_handler.split_rollouts(rollouts)
     # Construct datasets and dataloaders from the rollouts
     dataset_by_split_name = {
