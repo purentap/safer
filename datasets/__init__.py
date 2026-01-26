@@ -12,6 +12,7 @@ _REGISTRY: dict[str, Type[BaseDatasetHandler]] = {
     "openvla": OpenVLADatasetHandler,
     "pi0-libero": Pi0LiberoDatasetHandler,
     "open_pi0_simpler_bridge": OpenPi0SimplerDatasetHandler,
+    "open_pi0_simpler_fractal": OpenPi0SimplerDatasetHandler,
     "pi0fast-libero": Pi0FastLiberoDatasetHandler,
 }
 

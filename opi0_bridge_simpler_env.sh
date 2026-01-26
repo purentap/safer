@@ -1,10 +1,10 @@
-MODEL="lstm_img"
+MODEL="fusion_lstmv2"
 LAMBDA_REGS=""1e-3,1e-2,1e-1,1"" #
 SEEDS="0,1,2"
 EPOCHS="200"
 BATCH_SIZE="64"
 LEARNING_RATES="1e-4,3e-4,1e-3" #1e-5, 1e-4,3e-4,1e-3,1e-5
-DATASET="open_pi0_simpler_bridge"
+DATASET="open_pi0_simpler_fractal" #open_pi0_simpler_bridge
 
 python train.py -m \
     model="${MODEL}" \

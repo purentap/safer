@@ -1,5 +1,5 @@
 import pickle
-path = "/mnt/mahzen/puren/research_data/simpler_env/rollouts/pizero_v1/bridge_beta_step19296_2024-12-26_22-30_42/widowx_carrot_on_plate/episode_96_success_True.pkl"
+path = f"/mnt/mahzen/puren/research_data/simpler_env/rollouts/pizero_v1/fractal_beta_step29576_2024-12-29_13-10_42/google_robot_close_drawer/episode_68_success_True.pkl"
 with open(path, "rb") as f:
     data = pickle.load(f)
 

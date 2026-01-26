@@ -1,0 +1,15 @@
+# @package _global_
+
+dataset:
+  name: open_pi0_simpler_fractal
+  path: /mnt/mahzen/puren/research_data/simpler_env/rollouts/pizero_v1/fractal_beta_step29576_2024-12-29_13-10_42
+  subset: fractal
+  pred_horizon: 4
+  exec_horizon: 2
+  hidden_feat_name: "sampled_action_embeds"
+  image_embed_name: "img_embeds"
+  hidden_feature_dim: 1024
+  image_embedding_dim: 1152
+  total_input_dim: 2176
+  unseen_task_ratio: 0.25
+  seen_train_ratio: 0.66
