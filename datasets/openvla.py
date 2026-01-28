@@ -9,9 +9,12 @@ import torch
 from tqdm import tqdm
 import natsort
 from data import RolloutData
-
+    
 class OpenVLADatasetHandler(BaseDatasetHandler):
-    def load_rollouts(self):
+    def __init__(self, cfg):
+        super().__init__(cfg)
+        self.cfg = cfg
+    def load_rollouts(self, path):
         all_rollouts = []
         pkl_files = glob.glob(os.path.join(path, "*.pkl"))
         cntr = 0 
@@ -57,7 +60,7 @@ class OpenVLADatasetHandler(BaseDatasetHandler):
         #all_rollouts = np.array(all_rollouts)
         #sort rollouts by task_id and episode_idx
         all_rollouts= sorted(all_rollouts, key=lambda x: (x.get_task_id(), x.get_episode_idx()))
-        all_rollouts = set_task_min_step(all_rollouts)
+        all_rollouts = self.set_task_min_step(all_rollouts)
 
         return all_rollouts
 

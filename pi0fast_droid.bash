@@ -14,7 +14,7 @@ python train.py -m \
     training.learning_rate=${LEARNING_RATES} \
     training.batch_size="${BATCH_SIZE}" \
     training.lambda_reg="${LAMBDA_REGS}" \
-    wandb.project="${MODEL}_${DATASET}_batch_${BATCH_SIZE}_epochs_${EPOCHS}" \
+    wandb.project="${MODEL}_nlayer2_${DATASET}_batch_${BATCH_SIZE}_epochs_${EPOCHS}" \
     wandb.enabled=true \
     seed=${SEEDS} \
     training.n_epochs=${EPOCHS}

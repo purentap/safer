@@ -8,12 +8,13 @@ import wandb
 import pandas as pd
 import numpy as np
 from collections import defaultdict
+from datasets import get_dataset_handler
 
 # Initialize WandB API
 api = wandb.Api()
 
 # Set your project name
-PROJECT_NAME = "lstm_img_pi0-libero_batch_64_epochs_200"  # Update this to match your project
+PROJECT_NAME = "fusion_lstmv2_pi0fast_droid_batch_64_epochs_500"  # Update this to match your project
 POLICY = "PI0"
 
 def _extract_scalar_from_summary_value(value):
