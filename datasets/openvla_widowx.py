@@ -8,6 +8,8 @@ import torch
 from tqdm import tqdm
 import natsort
 from data import RolloutData
+import natsort
+
 
 class OpenVlaWidowxDatasetHandler(BaseDatasetHandler):
     def __init__(self, cfg):
@@ -17,6 +19,7 @@ class OpenVlaWidowxDatasetHandler(BaseDatasetHandler):
     def load_rollouts(self):
         all_rollouts = []
         pkl_files = glob.glob(os.path.join(self.cfg.dataset.path, "*.pkl"))
+        pkl_files = natsort.natsorted(pkl_files)
         cntr = 0 
 
         for pkl_file in tqdm(pkl_files, desc="Loading data"):
@@ -38,7 +41,6 @@ class OpenVlaWidowxDatasetHandler(BaseDatasetHandler):
             token_idx = round((hidden_states.shape[-2] - 1) * 1) #taken from best reproduced result, last dimension is the best
             hidden_states= hidden_states[:, token_idx, :]
             #print(hidden_states.shape)
-            print(data["task_id"])
             rollout_data = RolloutData(img_embeddings, 
                                     hidden_states, 
                                     data["episode_success"], 
