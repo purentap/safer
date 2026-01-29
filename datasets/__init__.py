@@ -8,7 +8,7 @@ from .pi0_libero import Pi0LiberoDatasetHandler
 from .open_pi0_simplerenv import OpenPi0SimplerDatasetHandler
 from .pi0fast_libero import Pi0FastLiberoDatasetHandler
 from .pi0fast_droid import Pi0FastDroidDatasetHandler
-
+from .openvla_widowx import OpenVlaWidowxDatasetHandler
 _REGISTRY: dict[str, Type[BaseDatasetHandler]] = {
     "openvla": OpenVLADatasetHandler,
     "pi0-libero": Pi0LiberoDatasetHandler,
@@ -16,6 +16,7 @@ _REGISTRY: dict[str, Type[BaseDatasetHandler]] = {
     "open_pi0_simpler_fractal": OpenPi0SimplerDatasetHandler,
     "pi0fast-libero": Pi0FastLiberoDatasetHandler,
     "pi0fast_droid": Pi0FastDroidDatasetHandler,
+    "openvla_widowx": OpenVlaWidowxDatasetHandler,
 }
 
 

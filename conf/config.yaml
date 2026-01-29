@@ -1,6 +1,6 @@
 defaults:
-  - model: lstm_img
-  - dataset: pi0fast_droid
+  - model: fusion_lstmv2
+  - dataset: openvla_widowx
 
 # Training hyperparameters
 training:

@@ -15,6 +15,14 @@
             "program": "embedding_visualization.py",
             "console": "integratedTerminal",
             "args": [ "dataset=pi0fast_droid" ]
+        },
+        {"name": "Python Debugger: train.py",
+            "type": "debugpy",
+            "python": "/home/enes/miniconda3/envs/vla-safe/bin/python",
+            "request": "launch",
+            "program": "train.py",
+            "console": "integratedTerminal",
+            "args": [ "dataset=openvla_widowx" ]
         }
     ]
 }
