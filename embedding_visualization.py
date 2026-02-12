@@ -8,7 +8,7 @@ import hydra
 import utils
 #data_path = "/mnt/mahzen/puren/open_vla_data_all/rollouts/single-foward/libero_10" #openvla
 data_path = "/mnt/mahzen/puren/open_vla_data_img_action_embeddings" #pi0
-dataset_name = "openvla"
+dataset_name = "pi0-libero"
 
 @hydra.main(version_base=None, config_path="conf", config_name="config")
 def main(cfg: DictConfig):

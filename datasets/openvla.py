@@ -18,11 +18,14 @@ class OpenVLADatasetHandler(BaseDatasetHandler):
         if path is None:
             path = self.cfg.dataset.path
         all_rollouts = []
-        pkl_files = glob.glob(os.path.join(path, "*.pkl"))
+        #pkl_files = glob.glob(os.path.join(path, "*.pkl"))
+        csv_files = glob.glob(os.path.join(path, "*.csv"))
         cntr = 0 
-        for pkl_file in tqdm(pkl_files, desc="Loading data"):
+        for csv_file in tqdm(csv_files, desc="Loading data"):
             episode_embeddings = []
             cntr+=1
+            pkl_file = csv_file.replace(".csv", ".pkl")
+            
             with open(pkl_file, "rb") as f:
                 data = pickle.load(f)
             #print(data["embeddings_and_attention_masks"][0].keys())
@@ -32,10 +35,10 @@ class OpenVLADatasetHandler(BaseDatasetHandler):
 
             # Convert torch tensor to numpy array
             if isinstance(hidden_states, torch.Tensor):
-                action_embeddings = hidden_states[:, token_idx, :].detach().cpu().float().numpy()
+                action_embeddings = hidden_states[..., token_idx, :].detach().cpu().float().numpy()
             else:
-                action_embeddings = hidden_states[:, token_idx, :]
-            
+                action_embeddings = hidden_states[..., token_idx, :]
+            action_embeddings = torch.tensor(action_embeddings, dtype=torch.float32)
             '''
             rollout_embeddings = data["embeddings_and_attention_masks"]
 
@@ -47,9 +50,13 @@ class OpenVLADatasetHandler(BaseDatasetHandler):
             episode_embeddings = np.array(episode_embeddings)
             '''
             
-            episode_embeddings = data["embeddings"]
+            episode_embeddings = data["img_embeds"]
+            episode_embeddings = torch.stack(episode_embeddings)
+            episode_embeddings = episode_embeddings.squeeze(1)
+            episode_embeddings = episode_embeddings.to(torch.float32)
+
             #rollout_data = RolloutData(episode_embeddings, data["episode_success"], data["task_id"], data["eposide_idx"])
-            rollout_data = RolloutData(episode_embeddings, action_embeddings, data["success"], data["task_id"], data["episode_idx"])
+            rollout_data = RolloutData(episode_embeddings, action_embeddings, data["episode_success"], data["task_id"], data["eposide_idx"])
 
 
             #print(episode_embeddings)

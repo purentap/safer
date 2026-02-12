@@ -1,13 +1,13 @@
 defaults:
   - model: fusion_lstmv2
-  - dataset: openvla_widowx
+  - dataset: pi0-libero
 
 # Training hyperparameters
 training:
-  n_epochs: 100
+  n_epochs: 1000
   batch_size: 64
-  learning_rate: 0.00001
-  lambda_reg: 0.01
+  learning_rate: 0.0001
+  lambda_reg: 1
   use_scheduler: false
   save_best_model: false
   normalize_hidden_states: true
@@ -27,10 +27,10 @@ scheduler:
   #min_lr: 1e-4
 # Experiment tracking
 wandb:
-  project: architecture_comparison
+  project: openvla_action_only_test
   group: null  # Will be set automatically or can be overridden
   name: null   # Will be set automatically or can be overridden
   enabled: false
 
 # Random seed
-seed: 1
+seed: 2

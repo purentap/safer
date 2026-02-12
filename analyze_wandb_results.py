@@ -14,7 +14,7 @@ from datasets import get_dataset_handler
 api = wandb.Api()
 
 # Set your project name
-PROJECT_NAME = "fusion_lstmv2_pi0fast_droid_batch_64_epochs_500"  # Update this to match your project
+PROJECT_NAME = "CORRECTEMBEDS_fusion_lstmv2_pi0fast_libero_batch_64_epochs_1000"  # Update this to match your project
 POLICY = "PI0"
 
 def _extract_scalar_from_summary_value(value):
@@ -102,8 +102,10 @@ def get_group_statistics(project_name, metric_name="auc_by_min_task_step/val_see
                     coerced = _extract_scalar_from_summary_value(summary[metric_name])
                     if coerced is not None:
                         if metric_name == "auc_by_min_task_step/val_seen":
+                        #if metric_name == "auc_seen":
                             metric_values_seen.append(coerced)
                         elif metric_name == "auc_by_min_task_step/val_unseen_at_best_val_seen":
+                        #elif metric_name == "auc_unseen":
                             metric_values_unseen_at_best_val_seen.append(coerced)
                 
         
@@ -153,6 +155,7 @@ def print_results_table(df, metric_name="auc_by_min_task_step/val_seen"):
 
 if __name__ == "__main__":
     metrics = ["auc_by_min_task_step/val_seen", "auc_by_min_task_step/val_unseen_at_best_val_seen"]
+    #metrics = ["auc_seen", "auc_unseen"]
     # Create a summary table with all metrics
     print("\n" + "="*80)
     print("SUMMARY: Best hyperparameter settings")

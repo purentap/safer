@@ -6,7 +6,7 @@ dataset:
   unseen_task_ratio: 0.3
   seen_train_ratio: 0.6
   hidden_feature_dim: 1024
-  image_embedding_dim: 2048
-  total_input_dim:  3072
+  image_embedding_dim: 1152 #2048
+  total_input_dim:  2176 #3072
   hidden_feat_name: pre_velocity
-  img_embedding_name: prefix_tokens
+  img_embedding_name: base_rgb_patches_before_projection

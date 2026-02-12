@@ -1,13 +1,13 @@
 # @package _global_
 dataset:
   name: openvla
-  path: /mnt/mahzen/puren/open_vla_data_img_action_embeddings
+  path: /home/enes/puren/data/openvla/img_seperated
   device: cuda
   # dataset-wide split ratios
-  unseen_task_ratio: 0.2
-  seen_train_ratio: 0.8
+  unseen_task_ratio: 0.3
+  seen_train_ratio: 0.6
   # feature dimensions
-  hidden_feature_dim: 2176
-  image_embedding_dim: 4096
+  hidden_feature_dim: 4096
+  image_embedding_dim: 2176
   # convenience for models needing concatenated dim (img_action)
   total_input_dim: 6272  # 2176 + 4096

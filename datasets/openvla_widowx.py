@@ -18,14 +18,18 @@ class OpenVlaWidowxDatasetHandler(BaseDatasetHandler):
 
     def load_rollouts(self):
         all_rollouts = []
-        pkl_files = glob.glob(os.path.join(self.cfg.dataset.path, "*.pkl"))
-        pkl_files = natsort.natsorted(pkl_files)
+        all_csv = glob.glob(f"{self.cfg.dataset.path}*.csv")
+
+        #pkl_files = glob.glob(os.path.join(self.cfg.dataset.path, "*.pkl"))
+        all_csv = natsort.natsorted(all_csv)
         cntr = 0 
 
-        for pkl_file in tqdm(pkl_files, desc="Loading data"):
+        for csv_path in tqdm(all_csv, desc="Loading data"):
+            pkl_path = csv_path.replace(".csv", ".pkl")
+    
             episode_embeddings = []
             cntr+=1
-            with open(pkl_file, "rb") as f:
+            with open(pkl_path, "rb") as f:
                 data = pickle.load(f)
             hidden_states = data["hidden_states"]
             img_embeddings=data["img_embeds"]

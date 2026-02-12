@@ -24,6 +24,7 @@ class Pi0LiberoDatasetHandler(BaseDatasetHandler):
         self.hidden_feat_name = cfg.dataset.hidden_feat_name
         self.img_embedding_name = cfg.dataset.img_embedding_name
         self.total_input_dim = self.hidden_feature_dim + self.image_embedding_dim
+        self.cfg = cfg
     def load_rollouts(self):
         env_records_folder = os.path.join(self.path, "env_records")
         policy_records_folder = os.path.join(self.path, "policy_records")
@@ -59,7 +60,8 @@ class Pi0LiberoDatasetHandler(BaseDatasetHandler):
             image_embeddings = []
 
             for policy_record in policy_records:
-                
+                #print(policy_record["base_rgb_patches_before_projection"].shape)
+
                 # hidden_state shape: (n_diff_steps, n_pred_horizon, dim_feats)
                 hidden_state = policy_record["pre_velocity"]
 
@@ -70,13 +72,27 @@ class Pi0LiberoDatasetHandler(BaseDatasetHandler):
                 hidden_state = hidden_state[:, token_idx, :]
                 # handle the diff_steps dimension
                 # we use the last dimension since its reported it works best. 
-                diff_idx = 1
-                diff_step_idx = round((hidden_state.shape[-2] - 1) * diff_idx)
+                # diff_idx = 1
+                # diff_step_idx = round((hidden_state.shape[-2] - 1) * diff_idx)
 
-                hidden_state = hidden_state[..., diff_step_idx, : ]
+                # hidden_state = hidden_state[..., diff_step_idx, : ]
+                
+                k=2
+                # Determine the number of indices available along the second-to-last dimension.
+                c = hidden_state.shape[-2]
+                # Compute k indices uniformly spaced, including the endpoints.
+                indices = np.linspace(0, c - 1, num=k)
+                # Convert to integers by rounding.
+                indices = np.round(indices).astype(int)
+                # Use these indices to select along the second-to-last dimension.
+                indexed = hidden_state[..., indices, :]
+                new_last_dim = indexed.shape[-2] * indexed.shape[-1]
+                hidden_state = indexed.reshape(*indexed.shape[:-2], new_last_dim)
+                
+                self.cfg.dataset.hidden_feature_dim = hidden_state.shape[0]
                 hidden_states.append(hidden_state)
 
-                image_embedding = policy_record["prefix_tokens"].squeeze(0)
+                image_embedding = policy_record[self.cfg.dataset.img_embedding_name].squeeze(0)
                 action = policy_record["actions"].reshape(-1)
 
                 image_embeddings.append(image_embedding)

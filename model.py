@@ -30,15 +30,19 @@ class LSTMModel(nn.Module):
         print("HERE" , cfg.input_dim)
         self.lstm = nn.LSTM(cfg.input_dim, cfg.hidden_dim, cfg.num_layers,  batch_first=True, )
         self.fc = nn.Linear(cfg.hidden_dim, cfg.output_dim)
-        self.dropout = nn.Dropout(p=0.3)
+        self.dropout = nn.Dropout(p=0.0, inplace=False)
         if cfg.mode == "img_action": 
             self.mode = "img_action"
+        elif cfg.mode == "action":
+            self.mode = "action"
         else:
             self.mode = "img_only"
 
     def forward(self, img_embeddings, action_embeddings):
         if self.mode == "img_action":
             x = torch.cat([img_embeddings, action_embeddings], dim=-1)
+        elif self.mode == "action":
+            x = action_embeddings
         else:
             x = img_embeddings
         out, _ = self.lstm(x)

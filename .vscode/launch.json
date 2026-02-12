@@ -22,7 +22,7 @@
             "request": "launch",
             "program": "train.py",
             "console": "integratedTerminal",
-            "args": [ "dataset=openvla_widowx" ]
+            "args": [ "dataset=pi0-libero" ]
         }
     ]
 }
