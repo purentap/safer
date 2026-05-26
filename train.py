@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from random import seed
 import utils as utils 
 from model import MLPModel, LSTMModel, FusionLSTMModel
 from data import RolloutDataset
@@ -73,7 +74,18 @@ def main(cfg: DictConfig):
     }
     #if cfg.training.normalize_hidden_states:
     #    dataset_by_split_name = utils.normalize_rollouts_hidden_states(dataset_by_split_name)
-
+    # for k, v in dataset_by_split_name.items():
+    #     rollouts = v.rollouts
+    #     #count the number of tasks in the rollouts
+    #     task_ids = {}
+    #     for rollout in rollouts:
+    #         if rollout.get_task_id() not in task_ids:
+    #             task_ids[rollout.get_task_id()] = 0
+    #         task_ids[rollout.get_task_id()] += 1
+        
+    #     print(k, task_ids)
+        
+    
     dataloader_by_split_name = {
         k: DataLoader(
             v, 
@@ -117,48 +129,48 @@ def main(cfg: DictConfig):
             scheduler.step()
             #scheduler.step(loss)
         
-        if epoch % 25 == 0 or epoch == cfg.training.n_epochs - 1:
-            #Evaluation
-            model.eval()
-            logs, classification_logs, loss_logs = eval_epoch(model, dataloader_by_split_name,splitted_rollouts, device, batch_size=cfg.training.batch_size)
-            auc_seen = logs["auc_by_min_task_step/val_seen"]
-            auc_unseen = logs.get("auc_by_min_task_step/val_unseen", 0)  # Get val_unseen if it exists
+        #if epoch % 25 == 0 or epoch == cfg.training.n_epochs - 1:
+        #Evaluation
+        model.eval()
+        logs, classification_logs, loss_logs = eval_epoch(model, dataloader_by_split_name,splitted_rollouts, device, batch_size=cfg.training.batch_size)
+        auc_seen = logs["auc_by_min_task_step/val_seen"]
+        auc_unseen = logs.get("auc_by_min_task_step/val_unseen", 0)  # Get val_unseen if it exists
 
-                
-            if auc_seen > best_auc_so_far:
-                best_auc_so_far = auc_seen
-                best_epoch = epoch
-                best_val_unseen_auc = auc_unseen
-                if cfg.training.save_best_model:
-                    torch.save(model.state_dict(), f"best_model_{wandb_name}.pth")
-                if cfg.wandb.enabled:
-                    wandb.log({"classify_functional_cp/": wandb.Table(dataframe=classification_logs)})
-        
+            
+        if auc_seen > best_auc_so_far:
+            best_auc_so_far = auc_seen
+            best_epoch = epoch
+            best_val_unseen_auc = auc_unseen
+            if cfg.training.save_best_model:
+                torch.save({"model_state_dict": model.state_dict(), "epoch": epoch}, f"./models/{cfg.seed}_model.pth")
             if cfg.wandb.enabled:
-                logs = {**logs,
-                        "auc_seen": auc_seen,
-                        "epoch": epoch+1,
-                        "auc_unseen": auc_unseen,
-                          **loss_logs,
-                        "train_loss": loss,
-                        "train_fail_succ_loss(wo regularization)": fail_succ_loss,
-                        "reg_loss": reg_loss,
-                        "train_avg_fail_loss": avg_fail_loss,
-                        "train_avg_success_loss": avg_success_loss}
-                wandb.log(logs)
-                #wandb.log({"auc_seen": auc_seen})
-                #wandb.log({"epoch": epoch+1})
-                #wandb.log({"auc_unseen": auc_unseen})
-                #wandb.log(loss_logs)
-                #wandb.log({"train_loss": loss})
-                #wandb.log({"train_fail_succ_loss(wo regularization)": fail_succ_loss})
-                #wandb.log({"reg_loss": reg_loss})
-                #wandb.log({"train_avg_fail_loss": avg_fail_loss})
-                #wandb.log({"train_avg_success_loss": avg_success_loss})
-                if scheduler:
-                    wandb.log({"lr": scheduler.get_last_lr()[0]})
-                else:
-                    wandb.log({"lr": optimizer.param_groups[0]['lr']})
+                wandb.log({"classify_functional_cp/": wandb.Table(dataframe=classification_logs)})
+    
+        if cfg.wandb.enabled:
+            logs = {**logs,
+                    "auc_seen": auc_seen,
+                    "epoch": epoch+1,
+                    "auc_unseen": auc_unseen,
+                        **loss_logs,
+                    "train_loss": loss,
+                    "train_fail_succ_loss(wo regularization)": fail_succ_loss,
+                    "reg_loss": reg_loss,
+                    "train_avg_fail_loss": avg_fail_loss,
+                    "train_avg_success_loss": avg_success_loss}
+            wandb.log(logs)
+            #wandb.log({"auc_seen": auc_seen})
+            #wandb.log({"epoch": epoch+1})
+            #wandb.log({"auc_unseen": auc_unseen})
+            #wandb.log(loss_logs)
+            #wandb.log({"train_loss": loss})
+            #wandb.log({"train_fail_succ_loss(wo regularization)": fail_succ_loss})
+            #wandb.log({"reg_loss": reg_loss})
+            #wandb.log({"train_avg_fail_loss": avg_fail_loss})
+            #wandb.log({"train_avg_success_loss": avg_success_loss})
+            if scheduler:
+                wandb.log({"lr": scheduler.get_last_lr()[0]})
+            else:
+                wandb.log({"lr": optimizer.param_groups[0]['lr']})
 
     if cfg.wandb.enabled:
         wandb.summary["auc_by_min_task_step/val_unseen_at_best_val_seen"] = best_val_unseen_auc
@@ -166,6 +178,7 @@ def main(cfg: DictConfig):
         wandb.finish()  # Properly end the wandb run        
 
     return
+    
     
 if __name__ == "__main__":
     main()

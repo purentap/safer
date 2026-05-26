@@ -18,11 +18,20 @@
         },
         {"name": "Python Debugger: train.py",
             "type": "debugpy",
-            "python": "/home/enes/miniconda3/envs/vla-safe/bin/python",
+            "python": "/home/ai/anaconda3/envs/vla-safe/bin/python",
             "request": "launch",
             "program": "train.py",
             "console": "integratedTerminal",
-            "args": [ "dataset=pi0-libero" ]
-        }
+            "args": [ "dataset=pi0fast_droid" ]
+        },
+        {"name": "Python Debugger: analiz.py",
+        "type": "debugpy",
+        "python": "/home/ai/anaconda3/envs/vla-safe/bin/python",
+        "request": "launch",
+        "program": "analiz.py",
+        "console": "integratedTerminal",
+        "args": [ "dataset=pi0fast_droid" ]
+    },
+
     ]
 }

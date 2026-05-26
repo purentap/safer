@@ -13,10 +13,9 @@ import pickle
 # print(data2.keys())
 # print(data2["hidden_states"].shape)
 
-path = "/home/enes/puren/data/pi0fast_data/pi0fast_data/rollouts/pi0fast-libero_10/policy_records/step_99--pi0fast-libero_10--task_0--ep_1--t_245--meta.pkl"
+path = "/mnt/mahzen/rafi/vla-SAFE/puren_deneme/rollouts_all/20250509_rollouts/20250509_task4_put_the_cup_to_the_upright_position_02/env_records/task4--ep0--succ1--meta.pkl"
 
 with open(path, "rb") as f:
     data = pickle.load(f)
 print(data.keys())
-print(data["pre_logits"].shape)
-print(data["base_rgb_patches_before_projection"].shape)
+print(data["num_steps_wait"])

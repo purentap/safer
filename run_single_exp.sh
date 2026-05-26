@@ -1,6 +1,21 @@
-#!/bin/bash
+MODEL="fusion_lstmv2"
+LAMBDA_REGS="1e-3" #
+SEEDS="0,1,2,3,4"
+EPOCHS="500"
+BATCH_SIZE="64"
+LEARNING_RATES="3e-4" 
+DATASET="pi0fast_droid"
 
-SEEDS="0,1,2"
 
 python train.py -m \
-    seed=${SEEDS}
+    model="${MODEL}" \
+    dataset="${DATASET}" \
+    training.use_scheduler=false \
+    training.learning_rate=${LEARNING_RATES} \
+    training.batch_size="${BATCH_SIZE}" \
+    training.lambda_reg="${LAMBDA_REGS}" \
+    training.save_best_model=true \
+    wandb.project="pi0fast_droid_task_analiz" \
+    wandb.enabled=true \
+    seed=${SEEDS} \
+    training.n_epochs=${EPOCHS}

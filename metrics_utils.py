@@ -1,10 +1,14 @@
-from sklearn.metrics import roc_curve, auc
+from sklearn.metrics import roc_curve, auc, RocCurveDisplay
 from sklearn.metrics import roc_auc_score
 from conformal.functional_predictor import (RegressionType,
     ModulationType, FunctionalPredictor)
 import numpy as np 
 import pandas as pd 
-def eval_roc_auc(scores_by_split_name, rollouts_by_split_name):
+import matplotlib.pyplot as plt
+import analiz_utils
+
+
+def eval_roc_auc(scores_by_split_name, rollouts_by_split_name, debug=False, cfg=None):
     roc_curves_data = []
     time_quantiles = [0.25, 0.5, 0.75, 1.0] 
     auc_by_time = {}
@@ -14,9 +18,23 @@ def eval_roc_auc(scores_by_split_name, rollouts_by_split_name):
     for split, rollouts in rollouts_by_split_name.items():
         scores = scores_by_split_name[split]
         labels = [1-r.episode_success for r in rollouts]
+
+        task_ids = sorted(list[int](set([rollout.task_id for rollout in rollouts])))
+
         # Compute ROC curves and AUC by time quantiles and by minimum task step. 
         auc_by_time_quantiles, _, _  = compute_roc_by_time_quantile(scores, rollouts, time_quantiles)
-        auc_by_min_task_steps = compute_roc_by_min_task_step(scores, rollouts, labels)
+        auc_by_min_task_steps, best_threshold = compute_roc_by_min_task_step(scores, rollouts, labels,split,debug=True, threshold=True)
+        if debug:
+            analiz_utils.predict_by_threshold(scores, labels,rollouts, split, best_threshold, cfg)
+        #compute auc by task id
+        for task_id in task_ids:
+            indices_task = [i for i, r in enumerate(rollouts) if r.task_id == task_id]
+            rollouts_task = [rollouts[i] for i in indices_task]
+            scores_task = [scores[i] for i in indices_task]
+            labels_task = [1-r.episode_success for r in rollouts_task]
+            auc_by_task_id = compute_roc_by_min_task_step(scores_task, rollouts_task, labels_task)
+            logs[f"auc_by_min_task_step/{split}_task_{task_id}"] = auc_by_task_id
+            
         auc_by_time[split] = auc_by_time_quantiles
         auc_by_min_task_step[split] = auc_by_min_task_steps
         for k, v in auc_by_time_quantiles.items():
@@ -25,13 +43,34 @@ def eval_roc_auc(scores_by_split_name, rollouts_by_split_name):
         logs[f"auc_by_min_task_step/{split}"] = auc_by_min_task_steps
     return logs
 
-def compute_roc_by_min_task_step(scores, rollouts, labels):
+def compute_roc_by_min_task_step(scores, rollouts, labels, split=None,threshold=False, debug=False):
     #return a scalar
     scores = [s[:r.task_min_step].max() for s, r in zip(scores, rollouts)]
-
     fpr, tpr, thresholds = roc_curve(labels, scores)
     roc_auc = auc(fpr, tpr)
-    return roc_auc
+
+    j_scores = tpr - fpr
+    best_idx = np.argmax(j_scores)
+    best_threshold = thresholds[best_idx]
+        
+
+    if threshold:
+        # Plot
+        plt.figure()
+        plt.plot(fpr, tpr, label=f"{split} ROC curve (AUC = {roc_auc:.3f})")
+        plt.plot([0, 1], [0, 1], linestyle='--')  # Random classifier line
+
+        #plot best threshold according to Youden's J
+        plt.scatter(fpr[best_idx], tpr[best_idx])
+        plt.text(fpr[best_idx] + 0.02, tpr[best_idx] - 0.05,    f"Best threshold = {best_threshold:.3f}", fontsize=10)
+
+        plt.xlabel("False Positive Rate")
+        plt.ylabel("True Positive Rate")
+        plt.title(f"{split} ROC Curve")
+        plt.legend(loc="lower right")
+
+        plt.savefig(f"{split}_roc_curve.png", dpi=300, bbox_inches="tight")
+    return roc_auc, best_threshold
 def compute_roc_by_time_quantile(scores, rollouts, time_quantiles):
     fpr_by_time = {}
     tpr_by_time = {}

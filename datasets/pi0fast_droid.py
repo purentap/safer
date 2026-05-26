@@ -215,6 +215,7 @@ class Pi0FastDroidDatasetHandler(BaseDatasetHandler):
             rollouts = self.load_rollouts_from_root(path)
             all_rollouts.extend(rollouts)
         print(len(all_rollouts))
+        
 
          # Redo the task_id based on task_description for all rollouts
         task_descs = list(set([r.task_description for r in all_rollouts]))
@@ -223,6 +224,9 @@ class Pi0FastDroidDatasetHandler(BaseDatasetHandler):
         for r in all_rollouts:
             r.task_id = task_desc_to_id[r.task_description]
         print(f"Found {len(task_descs)} unique tasks with total {len(all_rollouts)} rollouts")
+
+        all_rollouts = sorted(all_rollouts, key=lambda x: (x.task_id, x.episode_idx))
+
         self.print_task_rollout_stats(all_rollouts, print_rollout_lengths=True)
 
         #They only keep the rollouts with max length in each task

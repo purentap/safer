@@ -1,12 +1,12 @@
 # @package _global_
 dataset:
   name: pi0fast_droid
-  path: /home/enes/puren/data/pi0fast_droid/pi0fast_droid_0510_all
+  path: /mnt/mahzen/rafi/vla-SAFE/pi0fast_droid_0510_all
   hidden_feat_name: pre_logits 
-  img_embedding_name: img_embeds_proj
+  img_embedding_name: img_embeds
   hidden_feature_dim: 2048
-  image_embedding_dim: 1152
-  total_input_dim: 3200
+  image_embedding_dim: 2048 #1152
+  total_input_dim: 4096 #3200
   seen_train_ratio: 0.75
   unseen_task_ratio: 0.25
   adjust_sr_min: 0.5

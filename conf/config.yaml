@@ -1,13 +1,13 @@
 defaults:
   - model: fusion_lstmv2
-  - dataset: pi0-libero
+  - dataset: pi0fast_droid
 
 # Training hyperparameters
 training:
   n_epochs: 1000
   batch_size: 64
-  learning_rate: 0.0001
-  lambda_reg: 1
+  learning_rate: 3e-4
+  lambda_reg: 1e-3
   use_scheduler: false
   save_best_model: false
   normalize_hidden_states: true
@@ -33,4 +33,4 @@ wandb:
   enabled: false
 
 # Random seed
-seed: 2
+seed: 0

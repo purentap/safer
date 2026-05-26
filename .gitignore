@@ -12,6 +12,7 @@ __pycache__/
 *.pyzwzw
 *.pyzwzwz
 *.csv
+*.png
 outputs/
 visualizations/
 multirun/

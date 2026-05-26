@@ -113,7 +113,7 @@ def train_epoch(model, opt, dataloader, device, lambda_reg, model_type):
     return losses, reg_loss, fail_succ_loss, avg_fail_loss, avg_success_loss
     
 
-def eval_epoch(model, dataloader_by_split_name, rollouts_by_split_name, device, batch_size=64):
+def eval_epoch(model, dataloader_by_split_name, rollouts_by_split_name, device, batch_size=64, mode="train", cfg=None):
     scores_by_split_name = {}
     loss_logs = {}
     for split, dataloader in dataloader_by_split_name.items():
@@ -164,7 +164,7 @@ def eval_epoch(model, dataloader_by_split_name, rollouts_by_split_name, device, 
             loss_logs[f"eval_loss/{split}_avg_fail_loss"] = avg_fail_loss
             loss_logs[f"eval_loss/{split}_avg_success_loss"] = avg_success_loss
 
-    logs= eval_roc_auc(scores_by_split_name, rollouts_by_split_name)
+    logs= eval_roc_auc(scores_by_split_name, rollouts_by_split_name, debug=True, cfg=cfg)
     classification_logs = eval_functional_conformal(scores_by_split_name, rollouts_by_split_name, calib_split_names = ["val_seen"], test_split_names = ["val_unseen"])
     return logs, classification_logs, loss_logs
 
