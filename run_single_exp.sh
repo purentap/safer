@@ -15,7 +15,7 @@ python train.py -m \
     training.batch_size="${BATCH_SIZE}" \
     training.lambda_reg="${LAMBDA_REGS}" \
     training.save_best_model=true \
-    wandb.project="pi0fast_droid_task_analiz" \
+    wandb.project="pi0fast_droid_my_code_fusion_lstmv2" \
     wandb.enabled=true \
     seed=${SEEDS} \
     training.n_epochs=${EPOCHS}

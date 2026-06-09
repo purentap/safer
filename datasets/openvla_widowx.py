@@ -22,6 +22,7 @@ class OpenVlaWidowxDatasetHandler(BaseDatasetHandler):
 
         #pkl_files = glob.glob(os.path.join(self.cfg.dataset.path, "*.pkl"))
         all_csv = natsort.natsorted(all_csv)
+        print(all_csv)
         cntr = 0 
 
         for csv_path in tqdm(all_csv, desc="Loading data"):

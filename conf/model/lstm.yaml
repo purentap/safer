@@ -6,8 +6,10 @@ model:
   
   params:
     # Model architecture parameters (LSTMModel takes cfg object)
-    input_dim: ${inputs.total_dim}
+    img_dim: ${dataset.image_embedding_dim}
+    action_dim: ${dataset.hidden_feature_dim}
     hidden_dim: 256
     num_layers: 1
     output_dim: 1
+    mode: action # "img_action", "action", img - determines input to LSTM (concatenated or action/image only)
 

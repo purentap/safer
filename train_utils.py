@@ -1,6 +1,6 @@
 import torch
 from torch.utils.data import DataLoader
-from metrics_utils import eval_roc_auc, eval_functional_conformal
+from metrics_utils import eval_roc_auc, eval_functional_conformal, eval_fixed_threshold
 import torch.nn as nn
 def calculate_fail_success_loss(losses, valid_masks, success_labels, weights):
     B, T = losses.shape
@@ -164,7 +164,8 @@ def eval_epoch(model, dataloader_by_split_name, rollouts_by_split_name, device, 
             loss_logs[f"eval_loss/{split}_avg_fail_loss"] = avg_fail_loss
             loss_logs[f"eval_loss/{split}_avg_success_loss"] = avg_success_loss
 
-    logs= eval_roc_auc(scores_by_split_name, rollouts_by_split_name, debug=True, cfg=cfg)
+    logs= eval_roc_auc(scores_by_split_name, rollouts_by_split_name, debug=False, cfg=cfg)
     classification_logs = eval_functional_conformal(scores_by_split_name, rollouts_by_split_name, calib_split_names = ["val_seen"], test_split_names = ["val_unseen"])
-    return logs, classification_logs, loss_logs
+    classification_logs_fixed_threshold = eval_fixed_threshold(scores_by_split_name, rollouts_by_split_name)
+    return logs, classification_logs, loss_logs, classification_logs_fixed_threshold
 

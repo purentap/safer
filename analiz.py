@@ -12,9 +12,10 @@ from train_utils import eval_epoch
 def main(cfg: DictConfig):
 
     model = torch.load("./models/0_model.pth")
-    
+    print(model["epoch"])
     model = FusionLSTMModel_v2(cfg.model.params)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print(torch.load("./models/0_model.pth")["model_state_dict"])
     model.load_state_dict(torch.load("./models/0_model.pth")["model_state_dict"])
     model = model.to(device)
     model.eval()
@@ -49,13 +50,13 @@ def main(cfg: DictConfig):
     }
     # end of data prep
 
-    logs, classification_logs, loss_logs = eval_epoch(model, dataloader_by_split_name,splitted_rollouts, device, batch_size=cfg.training.batch_size, mode="debug", cfg=cfg)
+    logs, classification_logs, loss_logs, classification_logs_fixed_threshold= eval_epoch(model, dataloader_by_split_name,splitted_rollouts, device, batch_size=cfg.training.batch_size, mode=None, cfg=cfg)
 
     #print(logs)
     print(f"auc_seen: {logs['auc_by_min_task_step/val_seen']}")
     print(f"auc_unseen: {logs['auc_by_min_task_step/val_unseen']}")
     
-    #print(classification_logs)
+    print(classification_logs_fixed_threshold)
     
 if __name__ == "__main__":
     main()

@@ -4,10 +4,10 @@ defaults:
 
 # Training hyperparameters
 training:
-  n_epochs: 1000
+  n_epochs: 500
   batch_size: 64
   learning_rate: 3e-4
-  lambda_reg: 1e-3
+  lambda_reg: 0.001
   use_scheduler: false
   save_best_model: false
   normalize_hidden_states: true
@@ -27,10 +27,10 @@ scheduler:
   #min_lr: 1e-4
 # Experiment tracking
 wandb:
-  project: openvla_action_only_test
+  project: very_important
   group: null  # Will be set automatically or can be overridden
   name: null   # Will be set automatically or can be overridden
-  enabled: false
+  enabled: true
 
 # Random seed
 seed: 0

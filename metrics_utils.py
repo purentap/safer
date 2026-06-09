@@ -7,6 +7,11 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import analiz_utils
 
+EVAL_TIMES = [
+    "at earliest stop",
+    "by earliest stop",
+    "by final end",
+]
 
 def eval_roc_auc(scores_by_split_name, rollouts_by_split_name, debug=False, cfg=None):
     roc_curves_data = []
@@ -142,6 +147,7 @@ def eval_functional_conformal(scores_by_split_name,
         # Split the cal scores evenly randomly into two set (for regression and modulation respectively)
         cal_scores_used = np.array(cal_scores_used)
 
+        np.random.seed(42) # For reproducibility
         np.random.shuffle(cal_scores_used)
         n_cal_1 = int(len(cal_scores_used) * 0.3) # 30% according to Chen's implementation
         cal_scores_1 = cal_scores_used[:n_cal_1]
@@ -202,6 +208,9 @@ def eval_functional_conformal(scores_by_split_name,
                     bal_acc = (tpr + tnr) / 2
 
                 classification_logs.append({
+                    "cal split": f"{'+'.join(calib_split_names)}",
+                    "test split": f"{'+'.join(test_split_names)}",
+                    "calib on": calib_on,
                     "alpha" : alpha,
                     "time": eval_time,
                     "avg_det_time": avg_det_time,
@@ -215,4 +224,98 @@ def eval_functional_conformal(scores_by_split_name,
                 })
     df = pd.DataFrame(classification_logs)
 
+    return df
+
+def eval_binary_classification(scores, labels, threshold):
+    #taken from SAFE
+    '''
+    Compute the metrics for a binary classification task.
+    Compute TPR, TNR, Accuracy, F1 Score based on the given threshold.
+    Also compute the ROC AUC and PRC AUC, which are agnostic to the threshold.
+    Properly handle the case where there is only one class in the labels.
+    
+    Args:
+        scores: classifier scores, shape (n_samples,), higher score means more likely to be positive.
+        labels: GT labels, shape (n_samples,), 1 means positive, 0 means negative.
+        threshold: The threshold for the binary classification.
+    
+    Returns:
+        dict: A dictionary of the computed metrics, with keys {tpr, tnr, accuracy, f1, roc_auc, prc_auc}.
+    '''
+    if isinstance(scores, list):
+        scores = np.array(scores)
+    if isinstance(labels, list):
+        labels = np.array(labels)
+    
+    pos_freq = np.sum(labels) / len(labels)
+    neg_freq = 1 - pos_freq
+
+    # Generate binary predictions using the threshold.
+    preds = (scores >= threshold).astype(int)
+
+    # Calculate confusion matrix components.
+    TP = np.sum((preds == 1) & (labels == 1))
+    FP = np.sum((preds == 1) & (labels == 0))
+    TN = np.sum((preds == 0) & (labels == 0))
+    FN = np.sum((preds == 0) & (labels == 1))
+    
+    # Compute TPR (Recall) and TNR.
+    tpr = TP / (TP + FN) if (TP + FN) > 0 else 0.0
+    tnr = TN / (TN + FP) if (TN + FP) > 0 else 0.0
+    fpr = FP / (FP + TN) if (FP + TN) > 0 else 0.0
+    fnr = FN / (FN + TP) if (FN + TP) > 0 else 0.0
+    
+    # Compute Accuracy.
+    acc = (TP + TN) / len(labels) if len(labels) > 0 else 0.0
+    bal_acc = (tpr + tnr) / 2
+    weighted_acc = (tpr * neg_freq + tnr * pos_freq) # Weighted by the inverse class frequency
+    
+    # Compute Precision.
+    precision = TP / (TP + FP) if (TP + FP) > 0 else 0.0
+    
+    # Compute F1 Score.
+    f1 = (2 * precision * tpr / (precision + tpr)) if (precision + tpr) > 0 else 0.0
+
+    # Return the computed metrics.
+    return {
+        "tpr": tpr,
+        "tnr": tnr,
+        "fpr": fpr,
+        "fnr": fnr,
+        "acc": acc,
+        "bal_acc": bal_acc,
+        "f1": f1,
+        "weighted-acc": weighted_acc,
+        #"roc_auc": roc_auc,
+        #"prc_auc": prc_auc,
+    }
+def eval_fixed_threshold(scores_by_split_name, rollouts_by_split_name, thresholds=[0.5]):
+    # classification with fixed threshold, 0.5
+    classification_logs = []
+    for split_name in rollouts_by_split_name:
+        rollouts = rollouts_by_split_name[split_name]
+        scores_all = scores_by_split_name[split_name]
+        labels = [1-r.episode_success for r in rollouts]
+
+        for eval_time in EVAL_TIMES:
+            if eval_time == "at earliest stop":
+                scores = [s[-1] for s, r in zip(scores_all, rollouts)]
+            elif eval_time == "by earliest stop":
+                scores = [s[:r.task_min_step].max() for s, r in zip(scores_all, rollouts)]
+            elif eval_time == "by final end":
+                scores = [s[:len(r.action_embeddings)].max() for s, r in zip(scores_all, rollouts)]
+            else:
+                raise ValueError(f"Unknown eval_time: {eval_time}")
+        
+            for thresh in thresholds:
+                result = eval_binary_classification(scores, labels, thresh)
+                classification_logs.append({
+                    "split": split_name,
+                    "eval_time": eval_time,
+                    "threshold_method": "fixed",
+                    "threshold": thresh,
+                    **result
+                })
+
+    df = pd.DataFrame(classification_logs)
     return df

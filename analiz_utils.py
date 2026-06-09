@@ -6,6 +6,7 @@ import cv2
 import math
 import imageio
 import os
+import wandb
 def predict_by_threshold(scores, labels,rollouts, split, threshold, cfg):
     print(split, "scores shape:", len(scores))
     n_test_samples = len(scores)
@@ -154,7 +155,53 @@ def predict_by_threshold(scores, labels,rollouts, split, threshold, cfg):
     df_fn.to_csv(f"./analiz_csv/seed{cfg.seed}_{split}_false_negative_samples.csv", index=False)
 
 
+def read_wandb_table(project_name):
+    api = wandb.Api()
+    runs = api.runs(project_name)
+    print(runs)
+    eval_types = ["at_earliest_stop", "by_earliest_stop", "by_final_end"]
+    all_dfs=[]
+    for run in runs:
+        run_summary = run.summary.get("classify_fixed_threshold/")
+        print(run_summary)
+        summary_dict = dict(run_summary)
 
+        # artifact_path = summary_dict["_latest_artifact_path"]
+        # print(artifact_path)
+        #artifact = api.artifact(artifact_path)
+        #print(artifact)
+        for artifact in run.logged_artifacts():
+            if "classify_fixed_threshold" in artifact.name: 
+                latest_name = artifact.name.split(":")[0] + ":latest"  # strip version, pin to latest
+                artifact = api.artifact(f"{run.entity}/{run.project}/{latest_name}")
+                table = artifact.get("classify_fixed_threshold")
+                df = pd.DataFrame(data=table.data, columns=table.columns)
+                all_dfs.append(df)
+                break
+
+        
+    stacked_df = pd.concat(all_dfs, ignore_index=True)
+    # Mean over the 5 runs, grouped by split + eval_time
+    metric_cols = ["tpr", "tnr", "fpr", "fnr", "acc", "bal_acc", "f1", "weighted-acc"]
+    mean_std_df = (
+        stacked_df
+        .groupby(["split", "eval_time"])[metric_cols]
+        .agg(["mean", "std"])
+        .reset_index()
+    )
+    mean_std_df.columns = [
+    f"{col}_{stat}" if stat else col 
+    for col, stat in mean_std_df.columns
+    ]   
+    print(mean_std_df.columns)
+    mean_std_df["bal_acc_pct"] = mean_std_df.apply(
+    lambda r: f"{r['bal_acc_mean']*100:.2f} ± {r['bal_acc_std']*100:.2f}", axis=1
+)
+    mean_std_df["f1_pct"] = mean_std_df.apply(
+    lambda r: f"{r['f1_mean']*100:.2f} ± {r['f1_std']*100:.2f}", axis=1
+    )
+
+    print(mean_std_df)
 def read_frames_from_path(mp4_path):
     cap = cv2.VideoCapture(mp4_path)
     if not cap.isOpened():
@@ -271,5 +318,5 @@ if __name__ == "__main__":
     out_path = "./analiz_videos"
     sub_type = "unseen/fn"
     seed = 2
-    create_videos_with_red_border(path, out_path, sub_type, seed)
-
+    project = "pi0fast_droid_my_code_fusion_lstmv2"
+    read_wandb_table(project)
