@@ -2,6 +2,7 @@ import torch
 from torch.utils.data import DataLoader
 from metrics_utils import eval_roc_auc, eval_functional_conformal, eval_fixed_threshold
 import torch.nn as nn
+import pandas as pd
 def calculate_fail_success_loss(losses, valid_masks, success_labels, weights):
     B, T = losses.shape
     # Seq-level aggregation
@@ -148,6 +149,7 @@ def eval_epoch(model, dataloader_by_split_name, rollouts_by_split_name, device, 
                 avg_fail_losses.append(batch_avg_fail_loss.item())
                 avg_success_losses.append(batch_avg_success_loss.item())
 
+            
 
             loss = sum(batch_losses) / len(batch_losses)
             avg_fail_loss = sum(avg_fail_losses) / len(avg_fail_losses)

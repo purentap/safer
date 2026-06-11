@@ -14,6 +14,7 @@ python train.py -m \
     training.batch_size="${BATCH_SIZE}" \
     training.lambda_reg="${LAMBDA_REGS}" \
     wandb.project="openvla_widowx_fusion_lstmv2_youdensj" \
-    wandb.enabled=true \
+    wandb.enabled=false \
     seed=${SEEDS} \
     training.n_epochs=${EPOCHS} \
+    training.save_best_model=true \

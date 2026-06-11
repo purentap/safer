@@ -60,7 +60,7 @@ def main(cfg: DictConfig):
     dataset_handler = DatasetHandler(cfg)
 
     rollouts = dataset_handler.load_rollouts()
-    
+
     
     print(rollouts[0].get_img_embeddings().dtype)
     print(rollouts[0].get_action_embeddings().dtype)
@@ -147,6 +147,7 @@ def main(cfg: DictConfig):
     best_epoch = 0
     best_val_unseen_auc = 0  # Track val_unseen at best val_seen epoch
     print(cfg.training.n_epochs)
+    
     for epoch in pbar:
 
         model.train()

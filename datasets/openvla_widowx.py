@@ -33,7 +33,6 @@ class OpenVlaWidowxDatasetHandler(BaseDatasetHandler):
                 data = pickle.load(f)
             hidden_states = data["hidden_states"]
             img_embeddings=data["img_embeds"]
-
             #convert list of tensors to numpy array
             #hidden_states = torch.stack(hidden_states).detach().cpu().float().numpy()
             #convert image embeddings list of arrays to torch tensor
@@ -49,7 +48,9 @@ class OpenVlaWidowxDatasetHandler(BaseDatasetHandler):
                                     hidden_states, 
                                     data["episode_success"], 
                                     data["task_id"], 
-                                    data["eposide_idx"])
+                                    data["eposide_idx"],
+                                    task_description= data["task_description"],
+                                    mp4_path = data["mp4_path"])
             
             all_rollouts.append(rollout_data)
             f.close()
