@@ -11,12 +11,13 @@ from train_utils import eval_epoch
 @hydra.main(version_base=None, config_path="conf", config_name="config")
 def main(cfg: DictConfig):
 
-    model = torch.load("./models/0_model.pth")
+    model_path = "/home/enes/puren/research/fail_detection_embeddings/models/openvla_widowx/1_model.pth"
+    model = torch.load(model_path)
     print(model["epoch"])
     model = FusionLSTMModel_v2(cfg.model.params)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print(torch.load("./models/0_model.pth")["model_state_dict"])
-    model.load_state_dict(torch.load("./models/0_model.pth")["model_state_dict"])
+    print(torch.load(model_path)["model_state_dict"])
+    model.load_state_dict(torch.load(model_path)["model_state_dict"])
     model = model.to(device)
     model.eval()
     print(model)

@@ -1,13 +1,13 @@
 defaults:
   - model: fusion_lstmv2
-  - dataset: pi0fast_droid
+  - dataset: openvla_widowx
 
 # Training hyperparameters
 training:
   n_epochs: 500
   batch_size: 64
-  learning_rate: 3e-4
-  lambda_reg: 0.001
+  learning_rate: 1e-3
+  lambda_reg: 1e-3
   use_scheduler: false
   save_best_model: false
   normalize_hidden_states: true
@@ -27,10 +27,10 @@ scheduler:
   #min_lr: 1e-4
 # Experiment tracking
 wandb:
-  project: very_important
+  project: openvla_widowx_my_code_fusion_lstmv2
   group: null  # Will be set automatically or can be overridden
   name: null   # Will be set automatically or can be overridden
-  enabled: true
+  enabled: false
 
 # Random seed
-seed: 0
+seed: 1

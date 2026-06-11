@@ -19,7 +19,7 @@ def eval_roc_auc(scores_by_split_name, rollouts_by_split_name, debug=False, cfg=
     auc_by_time = {}
     auc_by_min_task_step = {}
     logs = {}
-
+    best_thresholds_by_split = {}
     for split, rollouts in rollouts_by_split_name.items():
         scores = scores_by_split_name[split]
         labels = [1-r.episode_success for r in rollouts]
@@ -30,7 +30,8 @@ def eval_roc_auc(scores_by_split_name, rollouts_by_split_name, debug=False, cfg=
         auc_by_time_quantiles, _, _  = compute_roc_by_time_quantile(scores, rollouts, time_quantiles)
         auc_by_min_task_steps, best_threshold = compute_roc_by_min_task_step(scores, rollouts, labels,split,debug=True, threshold=True)
         if debug:
-            analiz_utils.predict_by_threshold(scores, labels,rollouts, split, best_threshold, cfg)
+            #analiz_utils.predict_by_threshold(scores, labels,rollouts, split, best_threshold, cfg)
+            pass
         #compute auc by task id
         for task_id in task_ids:
             indices_task = [i for i, r in enumerate(rollouts) if r.task_id == task_id]
@@ -46,7 +47,9 @@ def eval_roc_auc(scores_by_split_name, rollouts_by_split_name, debug=False, cfg=
             logs[f"auc_by_time_quantile_{k}/{split}"] = v
         
         logs[f"auc_by_min_task_step/{split}"] = auc_by_min_task_steps
-    return logs
+        logs[f"best_threshold_by_min_task_step/{split}"] = best_threshold
+        best_thresholds_by_split[split] = best_threshold
+    return logs, best_thresholds_by_split
 
 def compute_roc_by_min_task_step(scores, rollouts, labels, split=None,threshold=False, debug=False):
     #return a scalar
@@ -54,10 +57,10 @@ def compute_roc_by_min_task_step(scores, rollouts, labels, split=None,threshold=
     fpr, tpr, thresholds = roc_curve(labels, scores)
     roc_auc = auc(fpr, tpr)
 
+    #find the best threshold according to Youden's J statistic
     j_scores = tpr - fpr
     best_idx = np.argmax(j_scores)
     best_threshold = thresholds[best_idx]
-        
 
     if threshold:
         # Plot
@@ -296,7 +299,6 @@ def eval_fixed_threshold(scores_by_split_name, rollouts_by_split_name, threshold
         rollouts = rollouts_by_split_name[split_name]
         scores_all = scores_by_split_name[split_name]
         labels = [1-r.episode_success for r in rollouts]
-
         for eval_time in EVAL_TIMES:
             if eval_time == "at earliest stop":
                 scores = [s[-1] for s, r in zip(scores_all, rollouts)]
@@ -306,16 +308,28 @@ def eval_fixed_threshold(scores_by_split_name, rollouts_by_split_name, threshold
                 scores = [s[:len(r.action_embeddings)].max() for s, r in zip(scores_all, rollouts)]
             else:
                 raise ValueError(f"Unknown eval_time: {eval_time}")
-        
-            for thresh in thresholds:
+            
+            if isinstance(thresholds, dict):
+                thresh = thresholds[split_name]
                 result = eval_binary_classification(scores, labels, thresh)
                 classification_logs.append({
                     "split": split_name,
                     "eval_time": eval_time,
-                    "threshold_method": "fixed",
+                    "threshold_method": "youdens_j",
                     "threshold": thresh,
                     **result
                 })
+
+            else: 
+                for thresh in thresholds:
+                    result = eval_binary_classification(scores, labels, thresh)
+                    classification_logs.append({
+                        "split": split_name,
+                        "eval_time": eval_time,
+                        "threshold_method": "fixed",
+                        "threshold": thresh,
+                        **result
+                    })
 
     df = pd.DataFrame(classification_logs)
     return df

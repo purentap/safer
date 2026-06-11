@@ -1,0 +1,14 @@
+# @package _global_
+defaults:
+  - inputs: img_action
+model:
+  class_name: fusion_mlpv2
+  type: mlp
+  
+  params:
+    # Model architecture parameters
+    img_dim: ${dataset.image_embedding_dim}
+    action_dim: ${dataset.hidden_feature_dim}
+    input_dim: ${inputs.action_dim}  # Uses image dimension from inputs config
+    hidden_dim: 256
+    output_dim: 1

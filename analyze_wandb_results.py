@@ -14,7 +14,7 @@ from datasets import get_dataset_handler
 api = wandb.Api()
 
 # Set your project name
-PROJECT_NAME = "pi0fast_droid_my_code_fusion_lstmv2"  # Update this to match your project
+PROJECT_NAME = "openvla_widowx_my_code_fusion_lstmv2"  # Update this to match your project
 POLICY = "PI0"
 
 def _extract_scalar_from_summary_value(value):

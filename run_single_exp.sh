@@ -1,11 +1,10 @@
 MODEL="fusion_lstmv2"
 LAMBDA_REGS="1e-3" #
-SEEDS="0,1,2,3,4"
+SEEDS="1,4,7"
 EPOCHS="500"
 BATCH_SIZE="64"
-LEARNING_RATES="3e-4" 
-DATASET="pi0fast_droid"
-
+LEARNING_RATES="1e-3" #1e-5, 1e-4,3e-4,1e-3,1e-5
+DATASET="openvla_widowx"
 
 python train.py -m \
     model="${MODEL}" \
@@ -14,8 +13,7 @@ python train.py -m \
     training.learning_rate=${LEARNING_RATES} \
     training.batch_size="${BATCH_SIZE}" \
     training.lambda_reg="${LAMBDA_REGS}" \
-    training.save_best_model=true \
-    wandb.project="pi0fast_droid_my_code_fusion_lstmv2" \
+    wandb.project="openvla_widowx_fusion_lstmv2_youdensj" \
     wandb.enabled=true \
     seed=${SEEDS} \
-    training.n_epochs=${EPOCHS}
+    training.n_epochs=${EPOCHS} \

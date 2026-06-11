@@ -1,7 +1,7 @@
 # @package _global_
 dataset:
   name: openvla_widowx
-  path: /home/ai/puren/openvla_widowx/openvla_widowx/**/
+  path: "/home/enes/puren/data/openvla_widowx/correct_embeddings/openvla_widowx_correct_embeds_data/openvla_widowx/**/"
   unseen_task_ratio: 0.25
   seen_train_ratio: 0.66
   

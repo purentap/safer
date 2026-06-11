@@ -158,54 +158,55 @@ def main(cfg: DictConfig):
             scheduler.step()
             #scheduler.step(loss)
         
-        if epoch % 25 == 0 or epoch == cfg.training.n_epochs - 1:
-            #Evaluation
-            model.eval()
-            if epoch == cfg.training.n_epochs - 1:
-                print("Final evaluation:")
-            logs, classification_logs, loss_logs, classification_logs_fixed_threshold = eval_epoch(model, dataloader_by_split_name,splitted_rollouts, device, batch_size=cfg.training.batch_size)
-            auc_seen = logs["auc_by_min_task_step/val_seen"]
-            auc_unseen = logs.get("auc_by_min_task_step/val_unseen", 0)  # Get val_unseen if it exists
+        #if epoch % 25 == 0 or epoch == cfg.training.n_epochs - 1:
+        #Evaluation
+        model.eval()
+        if epoch == cfg.training.n_epochs - 1:
+            print("Final evaluation:")
+        logs, classification_logs, loss_logs, classification_logs_fixed_threshold, classification_logs_best_threshold = eval_epoch(model, dataloader_by_split_name,splitted_rollouts, device, batch_size=cfg.training.batch_size)
+        auc_seen = logs["auc_by_min_task_step/val_seen"]
+        auc_unseen = logs.get("auc_by_min_task_step/val_unseen", 0)  # Get val_unseen if it exists
 
-            if epoch == cfg.training.n_epochs - 1:
-                wandb.log({"classify_functional_cp/": wandb.Table(dataframe=classification_logs)})
-                wandb.log({"classify_fixed_threshold/": wandb.Table(dataframe=classification_logs_fixed_threshold)})
-            if auc_seen > best_auc_so_far:
-                best_auc_so_far = auc_seen
-                best_epoch = epoch
-                best_val_unseen_auc = auc_unseen
-                if cfg.training.save_best_model:
-                    torch.save({"model_state_dict": model.state_dict(), "epoch": epoch}, f"./models/{cfg.seed}_model.pth")
-                # if cfg.wandb.enabled:
-                #     wandb.log({"classify_functional_cp/": wandb.Table(dataframe=classification_logs)})
-                #     wandb.log({"classify_fixed_threshold/": wandb.Table(dataframe=classification_logs_fixed_threshold)})  
-                #     wandb.log({"best_classification_epoch": epoch+1})  
+        # if epoch == cfg.training.n_epochs - 1:
+        #     wandb.log({"classify_functional_cp/": wandb.Table(dataframe=classification_logs)})
+        #     wandb.log({"classify_fixed_threshold/": wandb.Table(dataframe=classification_logs_fixed_threshold)})
+        if auc_seen > best_auc_so_far:
+            best_auc_so_far = auc_seen
+            best_epoch = epoch
+            best_val_unseen_auc = auc_unseen
+            if cfg.training.save_best_model:
+                torch.save({"model_state_dict": model.state_dict(), "epoch": epoch}, f"./models/openvla_widowx/{cfg.seed}_model.pth")
             if cfg.wandb.enabled:
-                logs = {**logs,
-                        "auc_seen": auc_seen,
-                        "epoch": epoch+1,
-                        "auc_unseen": auc_unseen,
-                            **loss_logs,
-                        "train_loss": loss,
-                        "train_fail_succ_loss(wo regularization)": fail_succ_loss,
-                        "reg_loss": reg_loss,
-                        "train_avg_fail_loss": avg_fail_loss,
-                        "train_avg_success_loss": avg_success_loss}
-                wandb.log(logs)
-                
-                #wandb.log({"auc_seen": auc_seen})
-                #wandb.log({"epoch": epoch+1})
-                #wandb.log({"auc_unseen": auc_unseen})
-                #wandb.log(loss_logs)
-                #wandb.log({"train_loss": loss})
-                #wandb.log({"train_fail_succ_loss(wo regularization)": fail_succ_loss})
-                #wandb.log({"reg_loss": reg_loss})
-                #wandb.log({"train_avg_fail_loss": avg_fail_loss})
-                #wandb.log({"train_avg_success_loss": avg_success_loss})
-                if scheduler:
-                    wandb.log({"lr": scheduler.get_last_lr()[0]})
-                else:
-                    wandb.log({"lr": optimizer.param_groups[0]['lr']})
+                wandb.log({"classify_functional_cp/": wandb.Table(dataframe=classification_logs)})
+                wandb.log({"classify_fixed_threshold/": wandb.Table(dataframe=classification_logs_fixed_threshold)})  
+                wandb.log({"classify_best_threshold/": wandb.Table(dataframe=classification_logs_best_threshold)})
+                wandb.log({"best_classification_epoch": epoch+1})  
+        if cfg.wandb.enabled:
+            logs = {**logs,
+                    "auc_seen": auc_seen,
+                    "epoch": epoch+1,
+                    "auc_unseen": auc_unseen,
+                        **loss_logs,
+                    "train_loss": loss,
+                    "train_fail_succ_loss(wo regularization)": fail_succ_loss,
+                    "reg_loss": reg_loss,
+                    "train_avg_fail_loss": avg_fail_loss,
+                    "train_avg_success_loss": avg_success_loss}
+            wandb.log(logs)
+            
+            #wandb.log({"auc_seen": auc_seen})
+            #wandb.log({"epoch": epoch+1})
+            #wandb.log({"auc_unseen": auc_unseen})
+            #wandb.log(loss_logs)
+            #wandb.log({"train_loss": loss})
+            #wandb.log({"train_fail_succ_loss(wo regularization)": fail_succ_loss})
+            #wandb.log({"reg_loss": reg_loss})
+            #wandb.log({"train_avg_fail_loss": avg_fail_loss})
+            #wandb.log({"train_avg_success_loss": avg_success_loss})
+            if scheduler:
+                wandb.log({"lr": scheduler.get_last_lr()[0]})
+            else:
+                wandb.log({"lr": optimizer.param_groups[0]['lr']})
 
     if cfg.wandb.enabled:
         wandb.summary["auc_by_min_task_step/val_unseen_at_best_val_seen"] = best_val_unseen_auc

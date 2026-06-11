@@ -162,19 +162,19 @@ def read_wandb_table(project_name):
     eval_types = ["at_earliest_stop", "by_earliest_stop", "by_final_end"]
     all_dfs=[]
     for run in runs:
-        run_summary = run.summary.get("classify_fixed_threshold/")
-        print(run_summary)
-        summary_dict = dict(run_summary)
+        #run_summary = run.summary.get("classify_fixed_threshold/")
+        #print(run_summary)
+        #summary_dict = dict(run_summary)
 
         # artifact_path = summary_dict["_latest_artifact_path"]
         # print(artifact_path)
         #artifact = api.artifact(artifact_path)
         #print(artifact)
         for artifact in run.logged_artifacts():
-            if "classify_fixed_threshold" in artifact.name: 
+            if "best_fixed_threshold_classification" in artifact.name: #   classify_fixed_threshold
                 latest_name = artifact.name.split(":")[0] + ":latest"  # strip version, pin to latest
                 artifact = api.artifact(f"{run.entity}/{run.project}/{latest_name}")
-                table = artifact.get("classify_fixed_threshold")
+                table = artifact.get("best_fixed_threshold_classification")
                 df = pd.DataFrame(data=table.data, columns=table.columns)
                 all_dfs.append(df)
                 break
@@ -185,7 +185,7 @@ def read_wandb_table(project_name):
     metric_cols = ["tpr", "tnr", "fpr", "fnr", "acc", "bal_acc", "f1", "weighted-acc"]
     mean_std_df = (
         stacked_df
-        .groupby(["split", "eval_time"])[metric_cols]
+        .groupby(["split", "time"])[metric_cols] #eval_time for safer or time for safe
         .agg(["mean", "std"])
         .reset_index()
     )
@@ -318,5 +318,5 @@ if __name__ == "__main__":
     out_path = "./analiz_videos"
     sub_type = "unseen/fn"
     seed = 2
-    project = "pi0fast_droid_my_code_fusion_lstmv2"
+    project = "safe_pi0fast_droid_bestcp_mlp"
     read_wandb_table(project)
