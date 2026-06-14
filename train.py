@@ -176,7 +176,7 @@ def main(cfg: DictConfig):
             best_epoch = epoch
             best_val_unseen_auc = auc_unseen
             if cfg.training.save_best_model:
-                torch.save({"model_state_dict": model.state_dict(), "epoch": epoch}, f"./models/openvla_widowx/{cfg.seed}_model.pth")
+                torch.save({"model_state_dict": model.state_dict(), "epoch": epoch}, f"./models/pi0fast_droid/{cfg.seed}_model.pth")
             if cfg.wandb.enabled:
                 wandb.log({"classify_functional_cp/": wandb.Table(dataframe=classification_logs)})
                 wandb.log({"classify_fixed_threshold/": wandb.Table(dataframe=classification_logs_fixed_threshold)})  

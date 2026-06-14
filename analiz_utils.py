@@ -155,6 +155,100 @@ def predict_by_threshold(scores, labels,rollouts, split, threshold, cfg):
     df_fn.to_csv(f"./analiz_csv/seed{cfg.seed}_{split}_false_negative_samples.csv", index=False)
 
 
+
+def save_predictions_to_csv(all_scores, failure_labels, rollouts, split_name, threshold):
+    
+    if split_name == "train":
+        pass
+    else:
+        print(split_name, "scores shape:", len(all_scores))
+
+        if isinstance(failure_labels, list):
+            failure_labels = np.array(failure_labels)
+
+        
+        max_scores = [s[:r.task_min_step].max() for s, r in zip(all_scores, rollouts)]
+
+        preds = (max_scores >= threshold).astype(int)
+
+        pos_mask = failure_labels == 1 # (N,)
+
+        print("failure labels: ", failure_labels)
+        print("pos mask: " , pos_mask)
+        print("preds", preds)
+        #find misclassified samples
+        tp_indices, tn_indices = [], []
+        fn_indices, fp_indices = [],[]
+        misclassified_sample_indices, correct_classified_sample_indices=[], []
+        for i in range(len(max_scores)):
+            # if pos_mask[i] == 1 and  pos_mask[i] == preds[i]: #TP
+            #     tp_indices.append(i)
+            # elif pos_mask[i] == 0 and pos_mask[i] == preds[i]: #TN
+            #     tn_indices.append(i)
+            
+            # elif pos_mask[i]== 0 and preds[i] == 1: #FP
+            #     fp_indices.append[i]
+            
+            # elif pos_mask[i] == 1 and preds[i] == 0: #FN 
+            #     fn_indices.append(i)
+            if pos_mask[i] != preds[i]:
+                misclassified_sample_indices.append(i)
+
+            else: 
+                correct_classified_sample_indices.append(i)
+
+        misclassified_samples=[]
+        correct_classified_samples=[]
+        for i in misclassified_sample_indices:
+            path = rollouts[i].mp4_path
+            rollouts_score = all_scores[i]
+            rollouts_max_score = max_scores[i]
+            rollouts_label = failure_labels[i]
+            predicted_label = preds[i]
+            task_min_step = rollouts[i].task_min_step
+            task_description = rollouts[i].task_description
+
+            data = {
+                "episode_idx": rollouts[i].episode_idx,
+                "task_id": rollouts[i].task_id,
+                "mp4_path": path,
+                "all_scores": rollouts_score,
+                "rollouts_max_score": rollouts_max_score,
+                "rollouts_failure_label": rollouts_label,
+                "predicted_failure_label": predicted_label,
+                "task_min_step": task_min_step,
+                "threshold": threshold,
+                "task_description": task_description,
+            }
+            misclassified_samples.append(data)
+        
+        for i in correct_classified_sample_indices:
+            path = rollouts[i].mp4_path
+            rollouts_score = all_scores[i]
+            rollouts_max_score = max_scores[i]
+            rollouts_label = failure_labels[i]
+            predicted_label = preds[i]
+            task_min_step = rollouts[i].task_min_step
+            task_description = rollouts[i].task_description
+
+            data = {
+                "episode_idx": rollouts[i].episode_idx,
+                "task_id": rollouts[i].task_id,
+                "mp4_path": path,
+                "all_scores": rollouts_score,
+                "rollouts_max_score": rollouts_max_score,
+                "rollouts_failure_label": rollouts_label,
+                "predicted_failure_label": predicted_label,
+                "task_min_step": task_min_step,
+                "threshold": threshold,
+                "task_description": task_description,
+            }
+            correct_classified_samples.append(data)
+        
+        df_misclassified = pd.DataFrame(misclassified_samples)
+        df_correctly_classified = pd.DataFrame(correct_classified_samples)
+        df_misclassified.to_csv(f"./analiz_csv/tez_latest/seed{1}_{split_name}_misclassified_samples.csv", index=False)
+        df_correctly_classified.to_csv(f"./analiz_csv/tez_latest/seed{1}_{split_name}_correctly_classified.csv", index=False)
 def read_wandb_table(project_name):
     api = wandb.Api()
     runs = api.runs(project_name)
@@ -171,10 +265,12 @@ def read_wandb_table(project_name):
         #artifact = api.artifact(artifact_path)
         #print(artifact)
         for artifact in run.logged_artifacts():
-            if "best_fixed_threshold_classification" in artifact.name: #   classify_fixed_threshold
+            if "classify_best_threshold" in artifact.name: #   classify_fixed_threshold: for our code with t =0.5
+                                                            # best_fixed_threshold_classification: for safe reprod with t= 0.5 
+                                                            # classify_best_threshold: for our code with t obtained by youden's j statistics.
                 latest_name = artifact.name.split(":")[0] + ":latest"  # strip version, pin to latest
                 artifact = api.artifact(f"{run.entity}/{run.project}/{latest_name}")
-                table = artifact.get("best_fixed_threshold_classification")
+                table = artifact.get("classify_best_threshold")
                 df = pd.DataFrame(data=table.data, columns=table.columns)
                 all_dfs.append(df)
                 break
@@ -182,10 +278,10 @@ def read_wandb_table(project_name):
         
     stacked_df = pd.concat(all_dfs, ignore_index=True)
     # Mean over the 5 runs, grouped by split + eval_time
-    metric_cols = ["tpr", "tnr", "fpr", "fnr", "acc", "bal_acc", "f1", "weighted-acc"]
+    metric_cols = [ "acc", "bal_acc", "f1", "weighted-acc"]
     mean_std_df = (
         stacked_df
-        .groupby(["split", "time"])[metric_cols] #eval_time for safer or time for safe
+        .groupby(["split", "eval_time"])[metric_cols] #eval_time for safer or time for safe
         .agg(["mean", "std"])
         .reset_index()
     )
@@ -230,13 +326,13 @@ def create_videos_with_red_border(csv_path, output_path, sub_type, seed):
     for index, row in df.iterrows():
         mp4_path = row["mp4_path"]
         print(mp4_path)
-
+        
 
         frames= read_frames_from_path(mp4_path)
         #print(len(frames))
 
         # read the model output probabilties 
-        model_scores = row["rollouts_score"]
+        model_scores = row["all_scores"]
 
         model_scores = np.fromstring(model_scores.strip('[]'), dtype=float, sep=' ').tolist()
         print(len(model_scores) * 8)
@@ -284,7 +380,7 @@ def create_videos_with_red_border(csv_path, output_path, sub_type, seed):
             # fig.suptitle(
             # f"{r.task_description}\n , Succ {r.episode_success} Final score {model_scores[-1]:.2f}"
             # )
-            fig.suptitle(f"{mp4_path}\n{row['task_description']}\n Task id: {row['task_id']}\n Label: {row['rollouts_label']}\n Predicted: {row['predicted_label']}\n Max score: {row['rollouts_max_score']:.2f}")
+            fig.suptitle(f"{row['task_description']}\n Task id: {row['task_id']}\n Label: {row['rollouts_failure_label']}\n Predicted: {row['predicted_failure_label']}\n Max score: {row['rollouts_max_score']:.2f}")
             fig.tight_layout()
             # Draw the canvas and convert the figure to a numpy array.
             fig.canvas.draw()
@@ -296,8 +392,9 @@ def create_videos_with_red_border(csv_path, output_path, sub_type, seed):
 
         save_path = os.path.join(
             output_path, f"seed{seed}",sub_type,
-            f"Task{row['task_id']}_ep{row['episode_idx']}_succ{row['rollouts_label']}_maxscore{row['rollouts_max_score']:.2f}.mp4",
+            f"Task{row['task_id']}_ep{row['episode_idx']}_succ{row['rollouts_failure_label']}_pred{row['predicted_failure_label']}.mp4",
         )
+        #save_path = "./single_example.mp4"
         imageio.mimsave(save_path, frames_to_plot, fps=10)
         # for i in range(len(model_scores)):
         #     if model_scores[i] >= threshold:
@@ -314,9 +411,11 @@ def create_videos_with_red_border(csv_path, output_path, sub_type, seed):
         
 
 if __name__ == "__main__":
-    path = "./analiz_csv/seed2_val_unseen_false_negative_samples.csv"
-    out_path = "./analiz_videos"
-    sub_type = "unseen/fn"
-    seed = 2
-    project = "safe_pi0fast_droid_bestcp_mlp"
-    read_wandb_table(project)
+    path = "/home/ai/puren/research/fail-detection-embeddings/analiz_csv/tez_latest/seed1_val_unseen_correctly_classified.csv"
+    out_path = "./analiz_videos/tez_latest"
+    #sub_type = "unseen/fn"
+    sub_type="val_unseen/correctly_classified"
+    seed = 1
+    project = "pi0fast_droid_fusion_lstmv2_youdensj"
+    #read_wandb_table(project)
+    create_videos_with_red_border(path, out_path, sub_type, seed)

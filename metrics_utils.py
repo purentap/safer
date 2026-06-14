@@ -295,6 +295,7 @@ def eval_binary_classification(scores, labels, threshold):
 def eval_fixed_threshold(scores_by_split_name, rollouts_by_split_name, thresholds=[0.5]):
     # classification with fixed threshold, 0.5
     classification_logs = []
+    classification_per_task = {}
     for split_name in rollouts_by_split_name:
         rollouts = rollouts_by_split_name[split_name]
         scores_all = scores_by_split_name[split_name]
@@ -320,6 +321,20 @@ def eval_fixed_threshold(scores_by_split_name, rollouts_by_split_name, threshold
                     **result
                 })
 
+                #evaluate by task id 
+                task_ids = sorted(list[int](set([rollout.task_id for rollout in rollouts])))
+
+                if eval_time == "by earliest stop":
+                    for task_id in task_ids:
+                        task_sample_indices= [i for i, r in enumerate(rollouts) if r.task_id == task_id]
+                        task_rollouts = [rollouts[i] for i in task_sample_indices]
+                        task_scores = [scores[i] for i in task_sample_indices]
+                        task_failure_labels = [1-r.episode_success for r in task_rollouts]
+                        result = eval_binary_classification(task_scores, task_failure_labels, thresh)
+                        result_filtered = {k: result[k] for k in ["bal_acc", "f1"]}
+                        classification_per_task[f"classification_per_task/{eval_time}/{split_name}/{task_id}"] = result_filtered 
+
+                    analiz_utils.save_predictions_to_csv(scores_all,labels, rollouts, split_name, thresh)
             else: 
                 for thresh in thresholds:
                     result = eval_binary_classification(scores, labels, thresh)
@@ -331,5 +346,6 @@ def eval_fixed_threshold(scores_by_split_name, rollouts_by_split_name, threshold
                         **result
                     })
 
+    
     df = pd.DataFrame(classification_logs)
-    return df
+    return df, classification_per_task

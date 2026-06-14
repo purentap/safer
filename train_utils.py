@@ -165,10 +165,9 @@ def eval_epoch(model, dataloader_by_split_name, rollouts_by_split_name, device, 
             loss_logs[f"eval_loss/{split}_loss"] = loss
             loss_logs[f"eval_loss/{split}_avg_fail_loss"] = avg_fail_loss
             loss_logs[f"eval_loss/{split}_avg_success_loss"] = avg_success_loss
-
     logs, best_thresholds_by_split= eval_roc_auc(scores_by_split_name, rollouts_by_split_name, debug=False, cfg=cfg)
     classification_logs = eval_functional_conformal(scores_by_split_name, rollouts_by_split_name, calib_split_names = ["val_seen"], test_split_names = ["val_unseen"])
-    classification_logs_fixed_threshold = eval_fixed_threshold(scores_by_split_name, rollouts_by_split_name) #threshold=0.5 by default
-    classification_logs_best_thresholds = eval_fixed_threshold(scores_by_split_name, rollouts_by_split_name, best_thresholds_by_split) #use the best thresholds found by compute_roc_by_min_task_step for each split
-    return logs, classification_logs, loss_logs, classification_logs_fixed_threshold, classification_logs_best_thresholds
+    classification_logs_fixed_threshold, classification_per_task = eval_fixed_threshold(scores_by_split_name, rollouts_by_split_name) #threshold=0.5 by default
+    classification_logs_best_thresholds, classification_per_task = eval_fixed_threshold(scores_by_split_name, rollouts_by_split_name, best_thresholds_by_split) #use the best thresholds found by compute_roc_by_min_task_step for each split
+    return logs, classification_logs, loss_logs, classification_logs_fixed_threshold, classification_logs_best_thresholds, classification_per_task
 

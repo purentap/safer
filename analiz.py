@@ -8,10 +8,14 @@ from data import RolloutDataset
 from torch.utils.data import DataLoader
 from train_utils import eval_epoch
 import pandas as pd
+import wandb
 @hydra.main(version_base=None, config_path="conf", config_name="config")
 def main(cfg: DictConfig):
+    project = "task_based_classification"
+    name = "seed_1"
+    wandb.init(project=project, name = name , reinit=True)
 
-    model_path = "/home/enes/puren/research/fail_detection_embeddings/models/openvla_widowx/1_model.pth"
+    model_path = "/home/ai/puren/research/fail-detection-embeddings/models/pi0fast_droid/1_model.pth"
     model = torch.load(model_path)
     print(model["epoch"])
     model = FusionLSTMModel_v2(cfg.model.params)
@@ -50,7 +54,10 @@ def main(cfg: DictConfig):
         for k, v in dataset_by_split_name.items()
     }
     # end of data prep
-
+    logs, classification_logs, loss_logs, classification_logs_fixed_threshold, classification_logs_best_threshold, classification_per_task= eval_epoch(model, dataloader_by_split_name,rollouts_by_split_name, device, batch_size=cfg.training.batch_size, mode=None, cfg=cfg)
+    #print(classification_per_task)
+    wandb.log(classification_per_task)
+    '''
     scores_by_split_name={}
     labels_by_split_name={  }
     for split, dataloader in dataloader_by_split_name.items():
@@ -86,38 +93,37 @@ def main(cfg: DictConfig):
         labels_by_split_name[split] = [1 - all_labels[i].cpu().numpy() for i in range(len(all_labels))] #
     
         #TODO ALT KISIM KALKACAK
-    
-    folder_path = "/home/enes/puren/data/openvla_widowx/correct_embeddings/openvla_widowx_correct_embeds_data/openvla_widowx/"
-    df = []
-    for split in scores_by_split_name.keys():        
-        scores = scores_by_split_name[split]
-        labels = labels_by_split_name[split]
-        rollouts = rollouts_by_split_name[split]
+    '''
+    # folder_path = "/home/enes/puren/data/openvla_widowx/correct_embeddings/openvla_widowx_correct_embeds_data/openvla_widowx/"
+    # df = []
+    # for split in scores_by_split_name.keys():        
+    #     scores = scores_by_split_name[split]
+    #     labels = labels_by_split_name[split]
+    #     rollouts = rollouts_by_split_name[split]
 
-        for i in range(len(scores)):
-            rollout = rollouts[i]
-            mp4_path = rollout.mp4_path
+    #     for i in range(len(scores)):
+    #         rollout = rollouts[i]
+    #         mp4_path = rollout.mp4_path
 
-            mp4_path = mp4_path.replace("rollouts/", "")
-            mp4_path = folder_path + mp4_path
-            row = {}
-            row["output_scores"] = scores[i]
-            row["failure_labels"] = labels[i]
-            row["split"] = split
-            row["threshold"] = 0.5
-            row["mp4_path"] = mp4_path
-            df.append(row)            
-    df = pd.DataFrame(df)
-    df.to_excel("openvla_widowx_outputs_seed1.xlsx", index=False)
+    #         mp4_path = mp4_path.replace("rollouts/", "")
+    #         mp4_path = folder_path + mp4_path
+    #         row = {}
+    #         row["output_scores"] = scores[i]
+    #         row["failure_labels"] = labels[i]
+    #         row["split"] = split
+    #         row["threshold"] = 0.5
+    #         row["mp4_path"] = mp4_path
+    #         df.append(row)            
+    # df = pd.DataFrame(df)
+    # df.to_excel("openvla_widowx_outputs_seed1.xlsx", index=False)
 
     #print(df)
-    logs, classification_logs, loss_logs, classification_logs_fixed_threshold, classification_logs_best_threshold= eval_epoch(model, dataloader_by_split_name,rollouts_by_split_name, device, batch_size=cfg.training.batch_size, mode=None, cfg=cfg)
 
     #print(logs)
     #print(f"auc_seen: {logs['auc_by_min_task_step/val_seen']}")
     #print(f"auc_unseen: {logs['auc_by_min_task_step/val_unseen']}")
     
-    print(classification_logs_fixed_threshold)
+    #print(classification_logs_fixed_threshold)
     
 if __name__ == "__main__":
     main()
