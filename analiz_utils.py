@@ -7,6 +7,10 @@ import math
 import imageio
 import os
 import wandb
+import ast
+import json
+from matplotlib.ticker import StrMethodFormatter
+
 def predict_by_threshold(scores, labels,rollouts, split, threshold, cfg):
     print(split, "scores shape:", len(scores))
     n_test_samples = len(scores)
@@ -156,26 +160,26 @@ def predict_by_threshold(scores, labels,rollouts, split, threshold, cfg):
 
 
 
-def save_predictions_to_csv(all_scores, failure_labels, rollouts, split_name, threshold):
+def save_predictions_to_csv(all_scores, failure_labels, rollouts, split_name, threshold, gate_vectors):
     
     if split_name == "train":
         pass
     else:
-        print(split_name, "scores shape:", len(all_scores))
+        #print(split_name, "scores shape:", len(all_scores))
 
         if isinstance(failure_labels, list):
             failure_labels = np.array(failure_labels)
 
-        
         max_scores = [s[:r.task_min_step].max() for s, r in zip(all_scores, rollouts)]
+        max_scores = np.array(max_scores)
 
         preds = (max_scores >= threshold).astype(int)
 
         pos_mask = failure_labels == 1 # (N,)
 
-        print("failure labels: ", failure_labels)
-        print("pos mask: " , pos_mask)
-        print("preds", preds)
+        #print("failure labels: ", failure_labels)
+        #print("pos mask: " , pos_mask)
+        #print("preds", preds)
         #find misclassified samples
         tp_indices, tn_indices = [], []
         fn_indices, fp_indices = [],[]
@@ -207,12 +211,14 @@ def save_predictions_to_csv(all_scores, failure_labels, rollouts, split_name, th
             predicted_label = preds[i]
             task_min_step = rollouts[i].task_min_step
             task_description = rollouts[i].task_description
+            gate_vector = gate_vectors[i]
 
             data = {
                 "episode_idx": rollouts[i].episode_idx,
                 "task_id": rollouts[i].task_id,
                 "mp4_path": path,
                 "all_scores": rollouts_score,
+                "gate_vectors": json.dumps(gate_vector.tolist()),
                 "rollouts_max_score": rollouts_max_score,
                 "rollouts_failure_label": rollouts_label,
                 "predicted_failure_label": predicted_label,
@@ -230,12 +236,13 @@ def save_predictions_to_csv(all_scores, failure_labels, rollouts, split_name, th
             predicted_label = preds[i]
             task_min_step = rollouts[i].task_min_step
             task_description = rollouts[i].task_description
-
+            gate_vector = gate_vectors[i]
             data = {
                 "episode_idx": rollouts[i].episode_idx,
                 "task_id": rollouts[i].task_id,
                 "mp4_path": path,
                 "all_scores": rollouts_score,
+                "gate_vectors": json.dumps(gate_vector.tolist()),
                 "rollouts_max_score": rollouts_max_score,
                 "rollouts_failure_label": rollouts_label,
                 "predicted_failure_label": predicted_label,
@@ -247,8 +254,8 @@ def save_predictions_to_csv(all_scores, failure_labels, rollouts, split_name, th
         
         df_misclassified = pd.DataFrame(misclassified_samples)
         df_correctly_classified = pd.DataFrame(correct_classified_samples)
-        df_misclassified.to_csv(f"./analiz_csv/tez_latest/seed{1}_{split_name}_misclassified_samples.csv", index=False)
-        df_correctly_classified.to_csv(f"./analiz_csv/tez_latest/seed{1}_{split_name}_correctly_classified.csv", index=False)
+        df_misclassified.to_csv(f"./analiz_csv/tez_latest/gate_vectors/layernorm/seed0_t0.5/seed{0}_{split_name}_misclassified_samples.csv", index=False)
+        df_correctly_classified.to_csv(f"./analiz_csv/tez_latest/gate_vectors/layernorm/seed0_t0.5/seed{0}_{split_name}_correctly_classified.csv", index=False)
 def read_wandb_table(project_name):
     api = wandb.Api()
     runs = api.runs(project_name)
@@ -326,22 +333,34 @@ def create_videos_with_red_border(csv_path, output_path, sub_type, seed):
     for index, row in df.iterrows():
         mp4_path = row["mp4_path"]
         print(mp4_path)
-        
+            
+
 
         frames= read_frames_from_path(mp4_path)
         #print(len(frames))
 
         # read the model output probabilties 
-        model_scores = row["all_scores"]
+        #model_scores = row["all_scores"] # model output probabilities
+        model_scores = np.array(json.loads(row["gate_vectors"]))
+        print(model_scores.shape)
+        model_scores = model_scores.mean(axis=-1)  # (T,)
+        print(model_scores.shape)
+        #frac_image = (model_scores > 0.5).mean(axis=-1)  # (T,)
+        #frac_action = 1 - frac_image
 
-        model_scores = np.fromstring(model_scores.strip('[]'), dtype=float, sep=' ').tolist()
+        #print(frac_image)
+        #print(frac_action)
+        
+        #frac_image = (s > 0.5).mean(axis=-1)  # (T,)
+        #model_scores = np.fromstring(model_scores.strip('[]'), dtype=float, sep=' ').tolist()
         print(len(model_scores) * 8)
         print(len(frames))
         #dataset has 1 extra frame, we need to remove it
         if math.ceil( (len(frames)-1) /8) == len(model_scores):
             frames = frames[:-1]
         
-
+        
+        
         threshold = row["threshold"]
         mp4_path = mp4_path.split("/")[-4:]
         mp4_path = "/".join(mp4_path)
@@ -366,13 +385,15 @@ def create_videos_with_red_border(csv_path, output_path, sub_type, seed):
             score_plot_end = j // exec_horizon + 1
 
             ax.plot(model_scores[:score_plot_end], label="Current rollout", color="blue", lw=2)
+            #ax.yaxis.set_major_formatter(StrMethodFormatter('{x:.2f}'))
+
             ax.set_xlim(0, len(model_scores))
             #show the threshold line
-            ax.axhline(threshold, color='red', linestyle='--', label='threshold')
+            #ax.axhline(threshold, color='red', linestyle='--', label='threshold')
             ax.legend()
-            ax.set_title("Predicted failure score")
+            ax.set_title("Gating Vector Progression")
             ax.set_xlabel("Time step")
-            ax.set_ylabel("Score")
+            ax.set_ylabel("Mean Gating Vector")
 
             # draw a vertical line
             ax.axvline(row["task_min_step"], color='black', linestyle='--', label='earliest termination')
@@ -380,7 +401,9 @@ def create_videos_with_red_border(csv_path, output_path, sub_type, seed):
             # fig.suptitle(
             # f"{r.task_description}\n , Succ {r.episode_success} Final score {model_scores[-1]:.2f}"
             # )
-            fig.suptitle(f"{row['task_description']}\n Task id: {row['task_id']}\n Label: {row['rollouts_failure_label']}\n Predicted: {row['predicted_failure_label']}\n Max score: {row['rollouts_max_score']:.2f}")
+            #fig.suptitle(f"{row['task_description']}\n Task id: {row['task_id']}\n Label: {row['rollouts_failure_label']}\n Predicted: {row['predicted_failure_label']}\n Max score: {row['rollouts_max_score']:.2f}")
+            fig.suptitle(f"{row['task_description']}\n Task id: {row['task_id']}\n Label: {row['rollouts_failure_label']}\n Predicted: {row['predicted_failure_label']}")
+
             fig.tight_layout()
             # Draw the canvas and convert the figure to a numpy array.
             fig.canvas.draw()
@@ -391,7 +414,7 @@ def create_videos_with_red_border(csv_path, output_path, sub_type, seed):
         # Save the list of frames as an mp4 video.
 
         save_path = os.path.join(
-            output_path, f"seed{seed}",sub_type,
+            output_path, f"seed{seed}_t0.5",sub_type,
             f"Task{row['task_id']}_ep{row['episode_idx']}_succ{row['rollouts_failure_label']}_pred{row['predicted_failure_label']}.mp4",
         )
         #save_path = "./single_example.mp4"
@@ -411,11 +434,11 @@ def create_videos_with_red_border(csv_path, output_path, sub_type, seed):
         
 
 if __name__ == "__main__":
-    path = "/home/ai/puren/research/fail-detection-embeddings/analiz_csv/tez_latest/seed1_val_unseen_correctly_classified.csv"
-    out_path = "./analiz_videos/tez_latest"
+    path = "/home/ai/puren/research/fail-detection-embeddings/analiz_csv/tez_latest/gate_vectors/layernorm/seed0_t0.5/seed0_val_seen_correctly_classified.csv"
+    out_path = "./analiz_videos/gate_vectors/layernorm"
     #sub_type = "unseen/fn"
-    sub_type="val_unseen/correctly_classified"
-    seed = 1
+    sub_type="val_seen/correctly_classified"
+    seed = 0
     project = "pi0fast_droid_fusion_lstmv2_youdensj"
     #read_wandb_table(project)
     create_videos_with_red_border(path, out_path, sub_type, seed)

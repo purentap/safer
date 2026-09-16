@@ -6,10 +6,10 @@ defaults:
 training:
   n_epochs: 500
   batch_size: 64
-  learning_rate: 1e-3
-  lambda_reg: 1e-3
+  learning_rate: 0.0001
+  lambda_reg: 0.001
   use_scheduler: false
-  save_best_model: false
+  save_best_model: true
   normalize_hidden_states: true
 # Optimizer configuration
 optimizer:
@@ -27,10 +27,10 @@ scheduler:
   #min_lr: 1e-4
 # Experiment tracking
 wandb:
-  project: openvla_widowx_my_code_fusion_lstmv2
+  project: temp
   group: null  # Will be set automatically or can be overridden
   name: null   # Will be set automatically or can be overridden
-  enabled: false
+  enabled: true
 
 # Random seed
-seed: 1
+seed: 0

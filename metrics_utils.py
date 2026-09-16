@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd 
 import matplotlib.pyplot as plt
 import analiz_utils
+import torch
 
 EVAL_TIMES = [
     "at earliest stop",
@@ -33,13 +34,13 @@ def eval_roc_auc(scores_by_split_name, rollouts_by_split_name, debug=False, cfg=
             #analiz_utils.predict_by_threshold(scores, labels,rollouts, split, best_threshold, cfg)
             pass
         #compute auc by task id
-        for task_id in task_ids:
-            indices_task = [i for i, r in enumerate(rollouts) if r.task_id == task_id]
-            rollouts_task = [rollouts[i] for i in indices_task]
-            scores_task = [scores[i] for i in indices_task]
-            labels_task = [1-r.episode_success for r in rollouts_task]
-            auc_by_task_id = compute_roc_by_min_task_step(scores_task, rollouts_task, labels_task)
-            logs[f"auc_by_min_task_step/{split}_task_{task_id}"] = auc_by_task_id
+        # for task_id in task_ids:
+        #     indices_task = [i for i, r in enumerate(rollouts) if r.task_id == task_id]
+        #     rollouts_task = [rollouts[i] for i in indices_task]
+        #     scores_task = [scores[i] for i in indices_task]
+        #     labels_task = [1-r.episode_success for r in rollouts_task]
+        #     auc_by_task_id = compute_roc_by_min_task_step(scores_task, rollouts_task, labels_task)
+        #     logs[f"auc_by_min_task_step/{split}_task_{task_id}"] = auc_by_task_id
             
         auc_by_time[split] = auc_by_time_quantiles
         auc_by_min_task_step[split] = auc_by_min_task_steps
@@ -51,7 +52,7 @@ def eval_roc_auc(scores_by_split_name, rollouts_by_split_name, debug=False, cfg=
         best_thresholds_by_split[split] = best_threshold
     return logs, best_thresholds_by_split
 
-def compute_roc_by_min_task_step(scores, rollouts, labels, split=None,threshold=False, debug=False):
+def compute_roc_by_min_task_step(scores, rollouts, labels, split=None,threshold=True, debug=False):
     #return a scalar
     scores = [s[:r.task_min_step].max() for s, r in zip(scores, rollouts)]
     fpr, tpr, thresholds = roc_curve(labels, scores)
@@ -77,7 +78,7 @@ def compute_roc_by_min_task_step(scores, rollouts, labels, split=None,threshold=
         plt.title(f"{split} ROC Curve")
         plt.legend(loc="lower right")
 
-        plt.savefig(f"{split}_roc_curve.png", dpi=300, bbox_inches="tight")
+        plt.savefig(f"{split}_roc_curve.pdf", bbox_inches="tight")
     return roc_auc, best_threshold
 def compute_roc_by_time_quantile(scores, rollouts, time_quantiles):
     fpr_by_time = {}
@@ -124,28 +125,47 @@ def eval_functional_conformal(scores_by_split_name,
     
     classification_logs = []
 
-    calibration_rollouts = sum([rollouts_by_split_name[split] for split in calib_split_names], [])
-    test_rollouts = sum([rollouts_by_split_name[split] for split in test_split_names], [])
+    # calibration_rollouts = sum([rollouts_by_split_name[split] for split in calib_split_names], [])
+    # test_rollouts = sum([rollouts_by_split_name[split] for split in test_split_names], [])
 
-    calibration_scores = sum([scores_by_split_name[split] for split in calib_split_names], [])
-    test_scores = sum([scores_by_split_name[split] for split in test_split_names], [])
+    # calibration_scores = sum([scores_by_split_name[split] for split in calib_split_names], [])
+    # test_scores = sum([scores_by_split_name[split] for split in test_split_names], [])
     
+    # test_labels_all = np.asarray([1-r.episode_success for r in test_rollouts])
+    cal_rollouts, cal_scores_all = [], []
+    for split_name in calib_split_names:
+        cal_rollouts.extend(rollouts_by_split_name[split_name])
+        cal_scores_all.extend(scores_by_split_name[split_name])
+    cal_labels_all = np.asarray([1-r.episode_success for r in cal_rollouts])
+
+    test_rollouts, test_scores_all = [], []
+    for split_name in test_split_names:
+        test_rollouts.extend(rollouts_by_split_name[split_name])
+        test_scores_all.extend(scores_by_split_name[split_name])
     test_labels_all = np.asarray([1-r.episode_success for r in test_rollouts])
-
  
-    test_earliest_stop = np.array([r.task_min_step for r in test_rollouts]) # (N,)
+    # test_earliest_stop = np.array([r.task_min_step for r in test_rollouts]) # (N,)
 
+    # if align_method == "extend":
+    #     # Extend the early-stoping scores with the last value
+    #     max_length = max(len(s) for s in calibration_scores + test_scores)
+    #     for i, s in enumerate(calibration_scores):
+    #         calibration_scores[i] = np.pad(s, (0, max_length - len(s)), mode='edge')
+    #     for i, s in enumerate(test_scores):
+    #         test_scores[i] = np.pad(s, (0, max_length - len(s)), mode='edge')
+    
+    test_earliest_stop = np.array([r.task_min_step for r in test_rollouts]) # (N,)
     if align_method == "extend":
         # Extend the early-stoping scores with the last value
-        max_length = max(len(s) for s in calibration_scores + test_scores)
-        for i, s in enumerate(calibration_scores):
-            calibration_scores[i] = np.pad(s, (0, max_length - len(s)), mode='edge')
-        for i, s in enumerate(test_scores):
-            test_scores[i] = np.pad(s, (0, max_length - len(s)), mode='edge')
-    
+        max_length = max(len(s) for s in cal_scores_all + test_scores_all)
+        for i, s in enumerate(cal_scores_all):
+            cal_scores_all[i] = np.pad(s, (0, max_length - len(s)), mode='edge')
+        for i, s in enumerate(test_scores_all):
+            test_scores_all[i] = np.pad(s, (0, max_length - len(s)), mode='edge')
+
     for calib_on in ['neg']: # Calibration on the successful rollouts
         lower_bound = False
-        cal_scores_used = [s for s, r in zip(calibration_scores, calibration_rollouts) if r.episode_success == 1]
+        cal_scores_used = [s for s, r in zip(cal_scores_all, cal_rollouts) if r.episode_success == 1]
 
         # Split the cal scores evenly randomly into two set (for regression and modulation respectively)
         cal_scores_used = np.array(cal_scores_used)
@@ -157,12 +177,12 @@ def eval_functional_conformal(scores_by_split_name,
         cal_scores_2 = cal_scores_used[n_cal_1:]
 
         # Compute the conformal prediction band
-        test_scores_all = np.array(test_scores) # (N, T)
+        test_scores_all = np.array(test_scores_all) # (N, T)
         n_test_samples = len(test_scores_all)
         
         cp_bands_by_alpha = {}
         
-        for eval_time in ['by final end', 'by earliest stop']:
+        for eval_time in ['by earliest stop']:
             for alpha in alphas:
                 predictor = FunctionalPredictor(ModulationType.Tfunc, RegressionType.Mean)
                 cp_band = predictor.get_one_sided_prediction_band(
@@ -177,9 +197,11 @@ def eval_functional_conformal(scores_by_split_name,
                 # Handle different evaluation time modes    
                 if eval_time == "by final end":
                     lengths = test_scores_all.shape[1] # scalar, T
+                    print(f"eval_time: {eval_time}, lengths: {lengths}")
                 
                 elif eval_time == "by earliest stop":
                     lengths = test_earliest_stop # (N,)
+                    print(f"eval_time: {eval_time}, lengths: {lengths}")
                     # After the earliest stop, no more detection is possible. 
                     for i in range(len(test_scores_all)):
                         detection_mask[i, lengths[i]:] = False
@@ -217,6 +239,7 @@ def eval_functional_conformal(scores_by_split_name,
                     "alpha" : alpha,
                     "time": eval_time,
                     "avg_det_time": avg_det_time,
+                    "thresh_method" : "functional CP",
                     "tpr": tpr,
                     "tnr": tnr,
                     "fpr": fpr,
@@ -292,13 +315,14 @@ def eval_binary_classification(scores, labels, threshold):
         #"roc_auc": roc_auc,
         #"prc_auc": prc_auc,
     }
-def eval_fixed_threshold(scores_by_split_name, rollouts_by_split_name, thresholds=[0.5]):
+def eval_fixed_threshold(scores_by_split_name, rollouts_by_split_name, gate_vectors_by_split_name={}, thresholds=[0.5]):
     # classification with fixed threshold, 0.5
     classification_logs = []
     classification_per_task = {}
     for split_name in rollouts_by_split_name:
         rollouts = rollouts_by_split_name[split_name]
         scores_all = scores_by_split_name[split_name]
+        gate_vectors = gate_vectors_by_split_name[split_name]
         labels = [1-r.episode_success for r in rollouts]
         for eval_time in EVAL_TIMES:
             if eval_time == "at earliest stop":
@@ -325,16 +349,16 @@ def eval_fixed_threshold(scores_by_split_name, rollouts_by_split_name, threshold
                 task_ids = sorted(list[int](set([rollout.task_id for rollout in rollouts])))
 
                 if eval_time == "by earliest stop":
-                    for task_id in task_ids:
-                        task_sample_indices= [i for i, r in enumerate(rollouts) if r.task_id == task_id]
-                        task_rollouts = [rollouts[i] for i in task_sample_indices]
-                        task_scores = [scores[i] for i in task_sample_indices]
-                        task_failure_labels = [1-r.episode_success for r in task_rollouts]
-                        result = eval_binary_classification(task_scores, task_failure_labels, thresh)
-                        result_filtered = {k: result[k] for k in ["bal_acc", "f1"]}
-                        classification_per_task[f"classification_per_task/{eval_time}/{split_name}/{task_id}"] = result_filtered 
+                    # for task_id in task_ids:
+                    #     task_sample_indices= [i for i, r in enumerate(rollouts) if r.task_id == task_id]
+                    #     task_rollouts = [rollouts[i] for i in task_sample_indices]
+                    #     task_scores = [scores[i] for i in task_sample_indices]
+                    #     task_failure_labels = [1-r.episode_success for r in task_rollouts]
+                    #     result = eval_binary_classification(task_scores, task_failure_labels, thresh)
+                    #     result_filtered = {k: result[k] for k in ["bal_acc", "f1"]}
+                    #     classification_per_task[f"classification_per_task/{eval_time}/{split_name}/{task_id}"] = result_filtered 
 
-                    analiz_utils.save_predictions_to_csv(scores_all,labels, rollouts, split_name, thresh)
+                    analiz_utils.save_predictions_to_csv(scores_all,labels, rollouts, split_name, thresh, gate_vectors)
             else: 
                 for thresh in thresholds:
                     result = eval_binary_classification(scores, labels, thresh)
@@ -345,7 +369,150 @@ def eval_fixed_threshold(scores_by_split_name, rollouts_by_split_name, threshold
                         "threshold": thresh,
                         **result
                     })
+                    analiz_utils.save_predictions_to_csv(scores_all,labels, rollouts, split_name, thresh, gate_vectors)
 
     
     df = pd.DataFrame(classification_logs)
     return df, classification_per_task
+
+def eval_split_conformal(rollouts_by_split_name, scores_by_split_name, method_name, alphas=None, calib_split_names = ["val_seen"], test_split_names = ["val_unseen"]):
+    #taken from SAFE
+
+    if alphas is None:
+        alphas = [0.02] + [0.05 * i for i in range(1, 10)] + [0.5, 0.6, 0.7, 0.8, 0.9]
+
+    classification_logs = []
+    # Construct data for calibration and test sets
+    cal_rollouts, cal_scores_all = [], []
+    for split_name in calib_split_names:
+        cal_rollouts.extend(rollouts_by_split_name[split_name])
+        cal_scores_all.extend(scores_by_split_name[split_name])
+    cal_labels = [1-r.episode_success for r in cal_rollouts]
+    test_rollouts, test_scores_all = [], []
+    for split_name in test_split_names:
+        test_rollouts.extend(rollouts_by_split_name[split_name])
+        test_scores_all.extend(scores_by_split_name[split_name])
+    test_labels = [1-r.episode_success for r in test_rollouts]
+
+    for eval_time in EVAL_TIMES:
+        if eval_time == "at earliest stop":
+            cal_scores = [s[r.task_min_step - 1] for s, r in zip(cal_scores_all, cal_rollouts)]
+            test_scores = [s[r.task_min_step - 1] for s, r in zip(test_scores_all, test_rollouts)]
+        elif eval_time == "by earliest stop":
+            cal_scores = [s[:r.task_min_step].max() for s, r in zip(cal_scores_all, cal_rollouts)]
+            test_scores = [s[:r.task_min_step].max() for s, r in zip(test_scores_all, test_rollouts)]
+        elif eval_time == "by final end":
+            cal_scores = [s[:len(r.action_embeddings)].max() for s, r in zip(cal_scores_all, cal_rollouts)]
+            test_scores = [s[:len(r.action_embeddings)].max() for s, r in zip(test_scores_all, test_rollouts)]
+
+        # print("cal_scores:", cal_scores)
+        # print("cal_labels:", cal_labels)
+        # print("test_scores:", test_scores)
+        for alpha in alphas:
+            thresholds = split_conformal_binary(cal_scores, cal_labels, test_scores, alpha)
+
+            for calib_label in ['pos', 'neg']:
+                if calib_label == 'pos': 
+                    thresh_pos = 1 - thresholds[1]
+                else: 
+                    thresh_pos = thresholds[0]
+                
+                result = eval_binary_classification(test_scores, test_labels, thresh_pos)
+                classification_logs.append({
+                    "detect_method": method_name,
+                    "cal split": f"{'+'.join(calib_split_names)}",
+                    "test split": f"{'+'.join(test_split_names)}",
+                    "calib on": calib_label,
+                    "task": "all",
+                    "thresh_method": f"split CP, cal on {'+'.join(calib_split_names)}",
+                    "alpha": alpha,
+                    "time": eval_time,
+                    **result,
+                    "threshold": thresh_pos,
+                })
+    classification_logs = pd.DataFrame(classification_logs)
+
+    return classification_logs
+        
+
+def split_conformal_binary(cal_scores, cal_labels, test_scores, alpha):
+    """
+    Performs split conformal prediction for binary classification.
+    
+    For each calibration example, a nonconformity score is computed according to:
+      - If the true label is 1 (positive):  alpha = 1 - s(x)
+      - If the true label is 0 (negative):  alpha = s(x)
+    
+    Then, for each candidate label, a threshold is computed from the calibration set.
+    For a test example with score s, the nonconformity scores are:
+      - For candidate label 1: 1 - s
+      - For candidate label 0: s
+    
+    The prediction set for the test example includes a label if its test nonconformity score is below the corresponding threshold.
+    
+    Args:
+        cal_scores: 1D tensor of shape (N_cal,) containing scores (from e.g. a sigmoid) for calibration examples.
+        cal_labels: 1D tensor of shape (N_cal,) containing true binary labels (0 or 1) for calibration examples.
+        test_scores: 1D tensor of shape (N_test,) containing scores for test examples.
+        alpha: Significance level (e.g., 0.1 for 90% coverage).
+        
+    Returns:
+        A list of length N_test, where each element is a set containing one or both of the candidate labels (0 and/or 1).
+    """
+    #taken from SAFE
+    if isinstance(cal_scores, list):
+        cal_scores = torch.tensor(cal_scores)
+    if isinstance(cal_labels, list):
+        cal_labels = torch.tensor(cal_labels)
+    if isinstance(test_scores, list):
+        test_scores = torch.tensor(test_scores)
+    
+    # Compute thresholds for each candidate label
+    thresholds = {}
+
+    # For positive class (label 1): use nonconformity score = 1 - score.
+    pos_mask = (cal_labels == 1)
+    if pos_mask.sum() > 0:
+        cal_pos_scores = cal_scores[pos_mask]
+        # Compute nonconformity values for positive examples.
+        cal_pos_nconf = 1 - cal_pos_scores
+        threshold_pos = quantile_threshold(cal_pos_nconf, alpha)
+        #print("threshold pos: " , threshold_pos)
+        thresholds[1] = threshold_pos.item()
+    else:
+        thresholds[1] = float('inf')
+
+        
+    # For negative class (label 0): use nonconformity score = score.
+    neg_mask = (cal_labels == 0)
+    if neg_mask.sum() > 0:
+        cal_neg_scores = cal_scores[neg_mask]
+        # Nonconformity values for negative examples.
+        cal_neg_nconf = cal_neg_scores
+        threshold_neg = quantile_threshold(cal_neg_nconf, alpha)
+        #print("threshold neg: " , threshold_neg)
+        thresholds[0] = threshold_neg.item()
+    else:
+        thresholds[0] = float('inf')
+    
+    return thresholds
+
+
+def quantile_threshold(scores, alpha):
+    """
+    Computes the threshold as the ceil((N+1)*(1 - alpha))-th smallest value of the provided scores.
+    
+    Args:
+        scores: 1D tensor of nonconformity scores (for a given class).
+        alpha: significance level (e.g., 0.1 means we want at least 90% coverage).
+        
+    Returns:
+        A scalar tensor representing the threshold.
+    """
+    N = scores.numel()
+    # Calculate rank: note that we need to use 1-indexing for the quantile
+    k = int(torch.ceil(torch.tensor((N + 1) * (1 - alpha), dtype=torch.float)))
+    k = np.clip(k, 1, N)  # Ensure k is within bounds
+    sorted_scores, _ = torch.sort(scores)
+    threshold = sorted_scores[k - 1]  # k-1 because of 0-indexing
+    return threshold

@@ -1,8 +1,11 @@
 import torch
 from torch.utils.data import DataLoader
-from metrics_utils import eval_roc_auc, eval_functional_conformal, eval_fixed_threshold
+from metrics_utils import eval_roc_auc, eval_functional_conformal, eval_fixed_threshold, eval_split_conformal
 import torch.nn as nn
 import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+
 def calculate_fail_success_loss(losses, valid_masks, success_labels, weights):
     B, T = losses.shape
     # Seq-level aggregation
@@ -116,6 +119,7 @@ def train_epoch(model, opt, dataloader, device, lambda_reg, model_type):
 
 def eval_epoch(model, dataloader_by_split_name, rollouts_by_split_name, device, batch_size=64, mode="train", cfg=None):
     scores_by_split_name = {}
+    gate_vectors_by_split_name = {}
     loss_logs = {}
     for split, dataloader in dataloader_by_split_name.items():
         #re-create dataloader to disable shuffling
@@ -126,6 +130,7 @@ def eval_epoch(model, dataloader_by_split_name, rollouts_by_split_name, device, 
         scores = []
         all_valid_masks = []
         all_labels = []
+        gate_vectors = []
         batch_losses, avg_fail_losses, avg_success_losses = [], [], []
         criterion = nn.BCELoss(reduction="none")
         with torch.no_grad():
@@ -140,7 +145,7 @@ def eval_epoch(model, dataloader_by_split_name, rollouts_by_split_name, device, 
                 outputs = model(img_embeddings, action_embeddings)
                 outputs = outputs.squeeze(-1) # (B, T)
 
-                scores.append(outputs)
+                scores.append(outputs.detach().cpu())
 
                 failure_labels = (1 - success_labels.float()).unsqueeze(-1).expand_as(outputs)
                 batch_loss = criterion(outputs, failure_labels) # (B, T)
@@ -166,8 +171,11 @@ def eval_epoch(model, dataloader_by_split_name, rollouts_by_split_name, device, 
             loss_logs[f"eval_loss/{split}_avg_fail_loss"] = avg_fail_loss
             loss_logs[f"eval_loss/{split}_avg_success_loss"] = avg_success_loss
     logs, best_thresholds_by_split= eval_roc_auc(scores_by_split_name, rollouts_by_split_name, debug=False, cfg=cfg)
-    classification_logs = eval_functional_conformal(scores_by_split_name, rollouts_by_split_name, calib_split_names = ["val_seen"], test_split_names = ["val_unseen"])
-    classification_logs_fixed_threshold, classification_per_task = eval_fixed_threshold(scores_by_split_name, rollouts_by_split_name) #threshold=0.5 by default
-    classification_logs_best_thresholds, classification_per_task = eval_fixed_threshold(scores_by_split_name, rollouts_by_split_name, best_thresholds_by_split) #use the best thresholds found by compute_roc_by_min_task_step for each split
-    return logs, classification_logs, loss_logs, classification_logs_fixed_threshold, classification_logs_best_thresholds, classification_per_task
 
+    #further experiments for analysis, not reported in the paper. 
+    #split_cp = eval_split_conformal(rollouts_by_split_name, scores_by_split_name, method_name="split_conformal", calib_split_names = ["val_seen"], test_split_names = ["val_unseen"])
+    #classification_logs = eval_functional_conformal(scores_by_split_name, rollouts_by_split_name, calib_split_names = ["val_seen"], test_split_names = ["val_unseen"])
+    #classification_logs_fixed_threshold, classification_per_task = eval_fixed_threshold(scores_by_split_name, rollouts_by_split_name, gate_vectors_by_split_name = gate_vectors_by_split_name) #threshold=0.5 by default
+    #classification_logs_best_thresholds, classification_per_task = eval_fixed_threshold(scores_by_split_name, rollouts_by_split_name, gate_vectors_by_split_name= gate_vectors_by_split_name, thresholds=best_thresholds_by_split, ) #use the best thresholds found by compute_roc_by_min_task_step for each split
+
+    return logs, loss_logs #, classification_logs, loss_logs, classification_logs_fixed_threshold, classification_logs_best_thresholds # classification_per_task

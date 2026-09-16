@@ -13,20 +13,16 @@ import hydra
 from omegaconf import DictConfig, OmegaConf
 import torch.optim as optim
 import numpy as np
+import gc 
 from datasets import get_dataset_handler
-# Register simple math resolvers for config interpolation
-OmegaConf.register_new_resolver("add", lambda a, b: int(a) + int(b))
+
 @hydra.main(version_base=None, config_path="conf", config_name="config")
 def main(cfg: DictConfig):
-    #print(cfg)
     
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    #device = "cpu"
-    #utils.seed_everything(cfg.seed)
 
     ## WANDB CONFIGURATION ##
     wandb_config = OmegaConf.to_container(cfg, resolve=True)
-    
     # Create group name based on hyperparameters (lr, lambda_reg)
     # This groups runs with same hyperparams but different seeds
     lr_str = f"{cfg.training.learning_rate:.0e}".replace("e-0", "e-")
@@ -73,44 +69,7 @@ def main(cfg: DictConfig):
         for k, v in splitted_rollouts.items()
     }
 
-    # for k,v in dataset_by_split_name.items():
-    #     rollouts = v.rollouts
-
-    #     with open(f"{k}_rollout_paths.txt", "w") as f:
-    #         for rollout in rollouts:
-    #             mp4_path = rollout.mp4_path
-    #             f.write(mp4_path + "\n")
-    #if cfg.training.normalize_hidden_states:
-    #    dataset_by_split_name = utils.normalize_rollouts_hidden_states(dataset_by_split_name)
-    # smallest_steps = {}
-    # for k, v in dataset_by_split_name.items():
-    #     rollouts = v.rollouts
-    #     #count the number of tasks in the rollouts
-    #     task_ids = {}
-    #     for rollout in rollouts:
-    #         if rollout.get_task_id() not in task_ids:
-    #             task_ids[rollout.get_task_id()] = 0
-    #         task_ids[rollout.get_task_id()] += 1
-    #         if rollout.get_task_id() not in smallest_steps:
-    #             smallest_steps[rollout.get_task_id()] = rollout.task_min_step
-        
-    #     print(k, task_ids)
-    # print("min task steps: " , smallest_steps)
-    
-    # for k, v in dataset_by_split_name.items():
-    #     rollouts= v.rollouts
-    #     for rollout in rollouts:
-    #         #get rollout length
-    #         rollout_description = rollout.task_description
-    #         rollout_task_id = rollout.get_task_id()
-    #         rollout_len = rollout.get_action_embeddings().shape[0]
-
-    #         task_smallest_step = smallest_steps[rollout_task_id]
-    #         if rollout_len > task_smallest_step:
-    #             print(f"Rollout with task description '{rollout_task_id}' has length {rollout_len} which is larger than the smallest step {task_smallest_step} for that task. This may cause issues during training/evaluation.")
             
-        
-    
     dataloader_by_split_name = {
         k: DataLoader(
             v, 
@@ -120,11 +79,6 @@ def main(cfg: DictConfig):
         for k, v in dataset_by_split_name.items()
     }
     ## END OF DATA LOADING ##
-    for k, v in dataset_by_split_name.items():
-        print(v)
-        break
-
-
     
     ## MODEL INSTANTIATION ##
     model = utils.create_model(cfg)
@@ -159,29 +113,26 @@ def main(cfg: DictConfig):
             scheduler.step()
             #scheduler.step(loss)
         
-        #if epoch % 25 == 0 or epoch == cfg.training.n_epochs - 1:
         #Evaluation
         model.eval()
         if epoch == cfg.training.n_epochs - 1:
             print("Final evaluation:")
-        logs, classification_logs, loss_logs, classification_logs_fixed_threshold, classification_logs_best_threshold = eval_epoch(model, dataloader_by_split_name,splitted_rollouts, device, batch_size=cfg.training.batch_size)
+        logs, loss_logs = eval_epoch(model, dataloader_by_split_name,splitted_rollouts, device, batch_size=cfg.training.batch_size)
         auc_seen = logs["auc_by_min_task_step/val_seen"]
         auc_unseen = logs.get("auc_by_min_task_step/val_unseen", 0)  # Get val_unseen if it exists
 
-        # if epoch == cfg.training.n_epochs - 1:
-        #     wandb.log({"classify_functional_cp/": wandb.Table(dataframe=classification_logs)})
-        #     wandb.log({"classify_fixed_threshold/": wandb.Table(dataframe=classification_logs_fixed_threshold)})
         if auc_seen > best_auc_so_far:
             best_auc_so_far = auc_seen
             best_epoch = epoch
             best_val_unseen_auc = auc_unseen
             if cfg.training.save_best_model:
-                torch.save({"model_state_dict": model.state_dict(), "epoch": epoch}, f"./models/pi0fast_droid/{cfg.seed}_model.pth")
+                torch.save({"model_state_dict": model.state_dict(), "epoch": epoch}, f"./models/pi0fast_layernorm3/{cfg.seed}_model.pth")
             if cfg.wandb.enabled:
                 wandb.log({"classify_functional_cp/": wandb.Table(dataframe=classification_logs)})
                 wandb.log({"classify_fixed_threshold/": wandb.Table(dataframe=classification_logs_fixed_threshold)})  
                 wandb.log({"classify_best_threshold/": wandb.Table(dataframe=classification_logs_best_threshold)})
-                wandb.log({"best_classification_epoch": epoch+1})  
+                wandb.log({"best_epoch": epoch+1})  
+                
         if cfg.wandb.enabled:
             logs = {**logs,
                     "auc_seen": auc_seen,
@@ -194,16 +145,6 @@ def main(cfg: DictConfig):
                     "train_avg_fail_loss": avg_fail_loss,
                     "train_avg_success_loss": avg_success_loss}
             wandb.log(logs)
-            
-            #wandb.log({"auc_seen": auc_seen})
-            #wandb.log({"epoch": epoch+1})
-            #wandb.log({"auc_unseen": auc_unseen})
-            #wandb.log(loss_logs)
-            #wandb.log({"train_loss": loss})
-            #wandb.log({"train_fail_succ_loss(wo regularization)": fail_succ_loss})
-            #wandb.log({"reg_loss": reg_loss})
-            #wandb.log({"train_avg_fail_loss": avg_fail_loss})
-            #wandb.log({"train_avg_success_loss": avg_success_loss})
             if scheduler:
                 wandb.log({"lr": scheduler.get_last_lr()[0]})
             else:
@@ -214,6 +155,11 @@ def main(cfg: DictConfig):
         wandb.summary["best_epoch"] = best_epoch
         wandb.finish()  # Properly end the wandb run        
 
+        # del classification_logs
+        # del classification_logs_fixed_threshold
+        # del classification_logs_best_threshold
+
+    #gc.collect()  # Force garbage collection to free up memory
     return
     
     

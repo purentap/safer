@@ -109,6 +109,7 @@ class FusionLSTMModel_v2(nn.Module):
         self.img_weight = nn.Sequential(
             nn.Dropout(p=0.3),
             nn.Linear(cfg.img_dim, 128),
+            #nn.LayerNorm(128, elementwise_affine=False),
             #nn.ReLU(),
             #nn.Dropout(p=0.3),
             #nn.Linear(cfg.gate_hidden_dim, 1),
@@ -118,6 +119,7 @@ class FusionLSTMModel_v2(nn.Module):
         self.action_weight = nn.Sequential(
             nn.Dropout(p=0.3),
             nn.Linear(cfg.action_dim, 128),
+            #nn.LayerNorm(128, elementwise_affine=False),
             #nn.ReLU(),
             #nn.Dropout(p=0.3),
             #nn.Linear(cfg.gate_hidden_dim, 1),
@@ -125,25 +127,38 @@ class FusionLSTMModel_v2(nn.Module):
             nn.Tanh(),
         )
         self.fusion_weight = nn.Sequential(
+            #nn.LayerNorm(concat_dim,elementwise_affine=True),
             nn.Linear(concat_dim, 128),
+            #nn.LayerNorm(128,elementwise_affine=False),
             nn.Sigmoid(),
         )
+        # self.img_layernorm = nn.LayerNorm(cfg.img_dim, elementwise_affine=True)
+        # self.action_layernorm = nn.LayerNorm(cfg.action_dim, elementwise_affine=True)
+        # self.fusion_layernorm = nn.LayerNorm(concat_dim, elementwise_affine=True)
+
         self.lstm = nn.LSTM(128, cfg.lstm_hidden_dim, num_layers=1,  batch_first=True)
         self.fc = nn.Linear(cfg.lstm_hidden_dim, cfg.output_dim)
         self.dropout = nn.Dropout(p=0.3)
         self.tanh = nn.Tanh()
     def forward(self, img_embeddings, action_embeddings):
+        #img_embeddings = self.img_layernorm(img_embeddings)
+        #action_embeddings = self.action_layernorm(action_embeddings)
+
         img_hidden_state= self.img_weight(img_embeddings)
+        #img_hidden_state = self.img_layernorm(img_hidden_state)
         action_hidden_state = self.action_weight(action_embeddings)
+        # action_hidden_state = self.action_layernorm(action_embeddings)
         #img_hidden_state = self.tanh(img_hidden_state)
         #action_hidden_state = self.tanh(action_hidden_state)
         concat_input = torch.cat([img_embeddings, action_embeddings], dim=-1)
         z = self.fusion_weight(concat_input)
+
+        
         hidden_state = img_hidden_state * z + action_hidden_state * (1 - z)
         out, _ = self.lstm(hidden_state)
         out = self.dropout(out)
         out = torch.sigmoid(self.fc(out))
-        return out
+        return out#, z, img_hidden_state, action_hidden_state
     
 class DoubleLSTMModel(nn.Module):
     def __init__(self,cfg):

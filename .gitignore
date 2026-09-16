@@ -18,3 +18,9 @@ visualizations/
 multirun/
 analiz_videos/
 analis_csv/
+analiz.py
+analiz_utils.py
+analyse_tasks.py
+trial.py
+safer_inference_analiz.py
+safer_task_analiz.py

@@ -14,7 +14,7 @@ python train.py -m \
     training.batch_size="${BATCH_SIZE}" \
     training.lambda_reg="${LAMBDA_REGS}" \
     training.n_epochs=${EPOCHS} \
-    wandb.project="CORRECTEMBEDS_${MODEL}_${DATASET}_batch_${BATCH_SIZE}_epochs_${EPOCHS}" \
+    wandb.project="${MODEL}_${DATASET}_batch_${BATCH_SIZE}_epochs_${EPOCHS}" \
     wandb.enabled=true \
     seed=${SEEDS} \
     training.n_epochs=${EPOCHS}

@@ -11,11 +11,11 @@ import pandas as pd
 import wandb
 @hydra.main(version_base=None, config_path="conf", config_name="config")
 def main(cfg: DictConfig):
-    project = "task_based_classification"
-    name = "seed_1"
+    project = "temp"
+    name = "seed_0"
     wandb.init(project=project, name = name , reinit=True)
 
-    model_path = "/home/ai/puren/research/fail-detection-embeddings/models/pi0fast_droid/1_model.pth"
+    model_path = "/home/ai/puren/research/fail-detection-embeddings/models/pi0fast_droid/0_model.pth"
     model = torch.load(model_path)
     print(model["epoch"])
     model = FusionLSTMModel_v2(cfg.model.params)
@@ -54,9 +54,13 @@ def main(cfg: DictConfig):
         for k, v in dataset_by_split_name.items()
     }
     # end of data prep
-    logs, classification_logs, loss_logs, classification_logs_fixed_threshold, classification_logs_best_threshold, classification_per_task= eval_epoch(model, dataloader_by_split_name,rollouts_by_split_name, device, batch_size=cfg.training.batch_size, mode=None, cfg=cfg)
+    logs, classification_logs, loss_logs, classification_logs_fixed_threshold, classification_logs_best_threshold, split_cp= eval_epoch(model, dataloader_by_split_name,rollouts_by_split_name, device, batch_size=cfg.training.batch_size, mode=None, cfg=cfg)
     #print(classification_per_task)
-    wandb.log(classification_per_task)
+    #wandb.log(classification_logs_fixed_threshold)
+    wandb.log({"classify_split_cp/": wandb.Table(dataframe=split_cp)})    
+    
+    print(f"auc_seen: {logs['auc_by_min_task_step/val_seen']}")
+    print(f"auc_unseen: {logs['auc_by_min_task_step/val_unseen']}")
     '''
     scores_by_split_name={}
     labels_by_split_name={  }
