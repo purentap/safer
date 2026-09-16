@@ -39,27 +39,14 @@ class OpenVLADatasetHandler(BaseDatasetHandler):
             else:
                 action_embeddings = hidden_states[..., token_idx, :]
             action_embeddings = torch.tensor(action_embeddings, dtype=torch.float32)
-            '''
-            rollout_embeddings = data["embeddings_and_attention_masks"]
-
-            for ts in rollout_embeddings:
-                patch_features = ts["patch_features"]
-                img_embedding = (patch_features.reshape(-1, patch_features.shape[-1])).mean(axis=0).float().numpy()
-                episode_embeddings.append(img_embedding)
-            
-            episode_embeddings = np.array(episode_embeddings)
-            '''
             
             episode_embeddings = data["img_embeds"]
             episode_embeddings = torch.stack(episode_embeddings)
             episode_embeddings = episode_embeddings.squeeze(1)
             episode_embeddings = episode_embeddings.to(torch.float32)
 
-            #rollout_data = RolloutData(episode_embeddings, data["episode_success"], data["task_id"], data["eposide_idx"])
             rollout_data = RolloutData(episode_embeddings, action_embeddings, data["episode_success"], data["task_id"], data["eposide_idx"])
 
-
-            #print(episode_embeddings)
             all_rollouts.append(rollout_data)
             f.close()
 

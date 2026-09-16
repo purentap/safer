@@ -13,6 +13,8 @@ __pycache__/
 *.pyzwzwz
 *.csv
 *.png
+.vscode/
+artifacts/
 outputs/
 visualizations/
 multirun/

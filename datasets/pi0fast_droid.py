@@ -201,8 +201,6 @@ class Pi0FastDroidDatasetHandler(BaseDatasetHandler):
                                         task_description=env_record["task_description"],
                                         mp4_path=mp4_path)
             all_rollouts.append(rollout_data)
-
-            #print(ep_record.keys())
        
         return all_rollouts
 
@@ -214,7 +212,6 @@ class Pi0FastDroidDatasetHandler(BaseDatasetHandler):
         for path in tqdm(all_data_folders, desc="Loading rollouts"):
             rollouts = self.load_rollouts_from_root(path)
             all_rollouts.extend(rollouts)
-        print(len(all_rollouts))
         
 
          # Redo the task_id based on task_description for all rollouts
@@ -263,6 +260,4 @@ class Pi0FastDroidDatasetHandler(BaseDatasetHandler):
         print("="*20)
         print("Final statistics of the task descriptions and success rates:")
         self.print_task_rollout_stats(all_rollouts, task_metas)
-
-        print(len(all_rollouts))
         return all_rollouts
