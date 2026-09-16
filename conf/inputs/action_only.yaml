@@ -1,0 +1,9 @@
+
+name: action_only
+use_image: false
+use_action: true
+
+# Input dimensions
+img_dim: 0
+action_dim: ${dataset.hidden_feature_dim}
+

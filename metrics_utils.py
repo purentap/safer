@@ -5,7 +5,6 @@ from conformal.functional_predictor import (RegressionType,
 import numpy as np 
 import pandas as pd 
 import matplotlib.pyplot as plt
-import analiz_utils
 import torch
 
 EVAL_TIMES = [
@@ -30,17 +29,6 @@ def eval_roc_auc(scores_by_split_name, rollouts_by_split_name, debug=False, cfg=
         # Compute ROC curves and AUC by time quantiles and by minimum task step. 
         auc_by_time_quantiles, _, _  = compute_roc_by_time_quantile(scores, rollouts, time_quantiles)
         auc_by_min_task_steps, best_threshold = compute_roc_by_min_task_step(scores, rollouts, labels,split,debug=True, threshold=True)
-        if debug:
-            #analiz_utils.predict_by_threshold(scores, labels,rollouts, split, best_threshold, cfg)
-            pass
-        #compute auc by task id
-        # for task_id in task_ids:
-        #     indices_task = [i for i, r in enumerate(rollouts) if r.task_id == task_id]
-        #     rollouts_task = [rollouts[i] for i in indices_task]
-        #     scores_task = [scores[i] for i in indices_task]
-        #     labels_task = [1-r.episode_success for r in rollouts_task]
-        #     auc_by_task_id = compute_roc_by_min_task_step(scores_task, rollouts_task, labels_task)
-        #     logs[f"auc_by_min_task_step/{split}_task_{task_id}"] = auc_by_task_id
             
         auc_by_time[split] = auc_by_time_quantiles
         auc_by_min_task_step[split] = auc_by_min_task_steps
@@ -345,20 +333,6 @@ def eval_fixed_threshold(scores_by_split_name, rollouts_by_split_name, gate_vect
                     **result
                 })
 
-                #evaluate by task id 
-                task_ids = sorted(list[int](set([rollout.task_id for rollout in rollouts])))
-
-                if eval_time == "by earliest stop":
-                    # for task_id in task_ids:
-                    #     task_sample_indices= [i for i, r in enumerate(rollouts) if r.task_id == task_id]
-                    #     task_rollouts = [rollouts[i] for i in task_sample_indices]
-                    #     task_scores = [scores[i] for i in task_sample_indices]
-                    #     task_failure_labels = [1-r.episode_success for r in task_rollouts]
-                    #     result = eval_binary_classification(task_scores, task_failure_labels, thresh)
-                    #     result_filtered = {k: result[k] for k in ["bal_acc", "f1"]}
-                    #     classification_per_task[f"classification_per_task/{eval_time}/{split_name}/{task_id}"] = result_filtered 
-
-                    analiz_utils.save_predictions_to_csv(scores_all,labels, rollouts, split_name, thresh, gate_vectors)
             else: 
                 for thresh in thresholds:
                     result = eval_binary_classification(scores, labels, thresh)
@@ -369,8 +343,6 @@ def eval_fixed_threshold(scores_by_split_name, rollouts_by_split_name, gate_vect
                         "threshold": thresh,
                         **result
                     })
-                    analiz_utils.save_predictions_to_csv(scores_all,labels, rollouts, split_name, thresh, gate_vectors)
-
     
     df = pd.DataFrame(classification_logs)
     return df, classification_per_task
@@ -405,9 +377,6 @@ def eval_split_conformal(rollouts_by_split_name, scores_by_split_name, method_na
             cal_scores = [s[:len(r.action_embeddings)].max() for s, r in zip(cal_scores_all, cal_rollouts)]
             test_scores = [s[:len(r.action_embeddings)].max() for s, r in zip(test_scores_all, test_rollouts)]
 
-        # print("cal_scores:", cal_scores)
-        # print("cal_labels:", cal_labels)
-        # print("test_scores:", test_scores)
         for alpha in alphas:
             thresholds = split_conformal_binary(cal_scores, cal_labels, test_scores, alpha)
 

@@ -1,27 +1,6 @@
 import torch
 import torch.nn as nn
 
-class MLPModel(nn.Module):
-
-    def __init__(self, input_dim=2176, hidden_dim=64, output_dim=1):
-        super(MLPModel, self).__init__()
-
-        self.layers = nn.Sequential(
-            nn.Linear(input_dim, hidden_dim, bias=True),
-            nn.ReLU(),
-            #nn.Linear(hidden_dim, 64, bias=True),
-            #nn.ReLU(),
-            nn.Linear(hidden_dim, output_dim, bias=True),
-            nn.Sigmoid()
-        )
-
-    def forward(self, x):
-        x = self.layers(x)
-        # Accumulate the scores over the time dimension
-        
-        x = torch.cumsum(x, dim=-2) # (batch_size, seq_len, 1)
-
-        return x
         
 class LSTMModel(nn.Module):
     def __init__(self, cfg):

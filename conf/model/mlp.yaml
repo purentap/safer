@@ -1,11 +1,9 @@
-# @package _global_
-model:
-  class_name: mlp
-  type: mlp
-  
-  params:
-    # Model architecture parameters
-    input_dim: ${inputs.img_dim}  # Uses image dimension from inputs config
-    hidden_dim: 64
-    output_dim: 1
+
+name: mlp
+
+params:
+  # Model architecture parameters
+  input_dim: ${inputs.img_dim}  # Uses image dimension from inputs config
+  hidden_dim: 64
+  output_dim: 1
 

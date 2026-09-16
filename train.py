@@ -1,13 +1,11 @@
 #!/usr/bin/env python
 from random import seed
 import utils as utils 
-from model import MLPModel, LSTMModel, FusionLSTMModel
 from data import RolloutDataset
 import torch
 from torch.utils.data import DataLoader
 from tqdm import tqdm, trange
 from train_utils import train_epoch, eval_epoch
-from torch.optim.lr_scheduler import StepLR
 import wandb 
 import hydra
 from omegaconf import DictConfig, OmegaConf
@@ -29,7 +27,7 @@ def main(cfg: DictConfig):
     lambda_str = f"{cfg.training.lambda_reg:.0e}".replace("e-0", "e-")
     scheduler_str = f"_scheduler_{cfg.scheduler.type}_{cfg.scheduler.eta_min:.0e}".replace("e-0", "e-") if cfg.training.use_scheduler else "No_scheduler"
     epochs_str = f"_epochs_{cfg.training.n_epochs}"
-    wandb_group = cfg.wandb.group or f"{cfg.model.type}_lr_{lr_str}_lambda_{lambda_str}_{scheduler_str}{epochs_str}"
+    wandb_group = cfg.wandb.group or f"{cfg.model.name}_lr_{lr_str}_lambda_{lambda_str}_{scheduler_str}{epochs_str}"
     
     # Run name includes seed to distinguish runs within the same group
     wandb_name = cfg.wandb.name or f"seed_{cfg.seed}"
@@ -127,11 +125,11 @@ def main(cfg: DictConfig):
             best_val_unseen_auc = auc_unseen
             if cfg.training.save_best_model:
                 torch.save({"model_state_dict": model.state_dict(), "epoch": epoch}, f"./models/pi0fast_layernorm3/{cfg.seed}_model.pth")
-            if cfg.wandb.enabled:
-                wandb.log({"classify_functional_cp/": wandb.Table(dataframe=classification_logs)})
-                wandb.log({"classify_fixed_threshold/": wandb.Table(dataframe=classification_logs_fixed_threshold)})  
-                wandb.log({"classify_best_threshold/": wandb.Table(dataframe=classification_logs_best_threshold)})
-                wandb.log({"best_epoch": epoch+1})  
+            # if cfg.wandb.enabled:
+            #     wandb.log({"classify_functional_cp/": wandb.Table(dataframe=classification_logs)})
+            #     wandb.log({"classify_fixed_threshold/": wandb.Table(dataframe=classification_logs_fixed_threshold)})  
+            #     wandb.log({"classify_best_threshold/": wandb.Table(dataframe=classification_logs_best_threshold)})
+            #     wandb.log({"best_epoch": epoch+1})  
                 
         if cfg.wandb.enabled:
             logs = {**logs,

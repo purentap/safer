@@ -1,11 +1,9 @@
-# @package _global_
-dataset:
-  name: pi0fast-libero
-  path: /home/enes/puren/data/pi0fast_data/pi0fast_data/rollouts/pi0fast-libero_10
-  hidden_feat_name: pre_logits 
-  img_embedding_name: base_rgb_patches_before_projection
-  hidden_feature_dim: 2048
-  image_embedding_dim: 1152
-  total_input_dim: 3200
-  seen_train_ratio: 0.6
-  unseen_task_ratio: 0.3
+
+name: pi0fast-libero
+path: /home/enes/puren/data/pi0fast_data/pi0fast_data/rollouts/pi0fast-libero_10
+hidden_feat_name: pre_logits 
+img_embedding_name: base_rgb_patches_before_projection
+hidden_feature_dim: 2048
+image_embedding_dim: 1152
+seen_train_ratio: 0.6
+unseen_task_ratio: 0.3

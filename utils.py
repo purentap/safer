@@ -8,14 +8,11 @@ import random
 import natsort
 
 from data import RolloutData
-from model import MLPModel, LSTMModel, FusionLSTMModel, FusionLSTMModel_v2, DoubleLSTMModel
+from model import  LSTMModel, FusionLSTMModel_v2
 
 model_classes = {
-    "mlp": MLPModel,
     "LSTMModel": LSTMModel,
-    "FusionLSTMModel": FusionLSTMModel,
     "FusionLSTMModel_v2": FusionLSTMModel_v2,
-    "DoubleLSTMModel": DoubleLSTMModel,
 }
 
 optimizer_classes = {
@@ -25,7 +22,7 @@ optimizer_classes = {
 }
 def create_model(cfg):
     model_config = cfg.model
-    model_class = model_config.class_name
+    model_class = model_config.name
     model = model_classes[model_class](cfg=model_config.params)
     print(f"Model created successfully: {model}")
     return model

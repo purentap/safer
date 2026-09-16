@@ -1,15 +1,13 @@
-# @package _global_
 defaults:
   - inputs: img_action
-model:
-  class_name: LSTMModel
-  type: lstm
-  
-  params:
-    # Model architecture parameters (LSTMModel takes cfg object)
-    input_dim: ${inputs.total_dim}  # img_dim + action_dim when both are used
-    hidden_dim: 256
-    num_layers: 1
-    output_dim: 1
-    mode: img_action
+
+name: LSTMModel
+
+params:
+  # Model architecture parameters (LSTMModel takes cfg object)
+  input_dim: ${inputs.total_dim}  # img_dim + action_dim when both are used
+  hidden_dim: 256
+  num_layers: 1
+  output_dim: 1
+  mode: img_action
 

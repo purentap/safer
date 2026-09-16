@@ -1,14 +1,12 @@
-# @package _global_
 defaults:
   - inputs: img_only
-model:
-  class_name: LSTMModel
-  type: lstm
-  
-  params:
-    # Model architecture parameters
-    input_dim: ${inputs.img_dim}  # Uses image dimension from inputs config
-    hidden_dim: 256
-    num_layers: 1
-    output_dim: 1
-    mode: img
+
+name: LSTMModel
+
+params:
+  # Model architecture parameters
+  input_dim: ${inputs.img_dim}  # Uses image dimension from inputs config
+  hidden_dim: 256
+  num_layers: 1
+  output_dim: 1
+  mode: img
