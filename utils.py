@@ -9,7 +9,6 @@ import natsort
 
 from data import RolloutData
 from model import MLPModel, LSTMModel, FusionLSTMModel, FusionLSTMModel_v2, DoubleLSTMModel
-data_path = "/mnt/mahzen/puren/open_vla_data_all/rollouts/single-foward/libero_10"
 
 model_classes = {
     "mlp": MLPModel,
