@@ -50,23 +50,7 @@ def compute_roc_by_min_task_step(scores, rollouts, labels, split=None,threshold=
     j_scores = tpr - fpr
     best_idx = np.argmax(j_scores)
     best_threshold = thresholds[best_idx]
-
-    if threshold:
-        # Plot
-        plt.figure()
-        plt.plot(fpr, tpr, label=f"{split} ROC curve (AUC = {roc_auc:.3f})")
-        plt.plot([0, 1], [0, 1], linestyle='--')  # Random classifier line
-
-        #plot best threshold according to Youden's J
-        plt.scatter(fpr[best_idx], tpr[best_idx])
-        plt.text(fpr[best_idx] + 0.02, tpr[best_idx] - 0.05,    f"Best threshold = {best_threshold:.3f}", fontsize=10)
-
-        plt.xlabel("False Positive Rate")
-        plt.ylabel("True Positive Rate")
-        plt.title(f"{split} ROC Curve")
-        plt.legend(loc="lower right")
-
-        plt.savefig(f"{split}_roc_curve.pdf", bbox_inches="tight")
+    
     return roc_auc, best_threshold
 def compute_roc_by_time_quantile(scores, rollouts, time_quantiles):
     fpr_by_time = {}
@@ -459,7 +443,6 @@ def split_conformal_binary(cal_scores, cal_labels, test_scores, alpha):
         # Nonconformity values for negative examples.
         cal_neg_nconf = cal_neg_scores
         threshold_neg = quantile_threshold(cal_neg_nconf, alpha)
-        #print("threshold neg: " , threshold_neg)
         thresholds[0] = threshold_neg.item()
     else:
         thresholds[0] = float('inf')

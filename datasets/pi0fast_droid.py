@@ -163,8 +163,8 @@ class Pi0FastDroidDatasetHandler(BaseDatasetHandler):
 
 
     def load_rollouts_from_root(self, data_folder):
-        env_record_paths = glob.glob(os.path.join(self.cfg.dataset.path,data_folder, "env_records", "*.pkl"))
-        ep_record_paths = glob.glob(os.path.join(self.cfg.dataset.path,data_folder, "img_embed_extracted", "*.pkl"))
+        env_record_paths = glob.glob(os.path.join(self.cfg.data_root,data_folder, "env_records", "*.pkl"))
+        ep_record_paths = glob.glob(os.path.join(self.cfg.data_root,data_folder, "img_embed_extracted", "*.pkl"))
         env_record_paths = natsort.natsorted(env_record_paths)
         ep_record_paths = natsort.natsorted(ep_record_paths)
 

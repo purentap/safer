@@ -1,10 +1,9 @@
 
-name: pi0-libero
-path: /home/enes/puren/data/pi0_data/rollouts/pi0-libero_10  
-device: cuda
+name: pi0_libero 
+path: ${oc.env:PI0_ROLLOUT_PATH}
 unseen_task_ratio: 0.3
 seen_train_ratio: 0.6
 hidden_feature_dim: 1024
-image_embedding_dim: 1152 #2048
+image_embedding_dim: 2048 #1152
 hidden_feat_name: pre_velocity
-img_embedding_name: base_rgb_patches_before_projection
+img_embedding_name: prefix_tokens

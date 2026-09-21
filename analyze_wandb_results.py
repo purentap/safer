@@ -1,183 +1,261 @@
-"""
-Script to extract mean and std of success metrics from WandB runs grouped by hyperparameters.
+"""Summarize completed Weights & Biases runs by hyperparameter group.
 
-This script queries WandB API to get aggregated statistics for each hyperparameter combination.
+Example:
+    python analyze_wandb_results.py entity/project --output results.csv
+
+The output CSV contains one row per W&B group:
+
+    group: W&B group name shared by the sweep runs.
+    n_finished_runs: Number of included runs in the group.
+    learning_rate, lambda_reg: Hyperparameters read from the first run's config.
+    use_scheduler, scheduler_type, scheduler_eta_min: Scheduler settings.
+    selection_metric: Metric used to rank groups.
+    selection_mean, selection_std: Mean and sample standard deviation across
+        runs that logged the selection metric.
+    n_selection_metric: Number of runs contributing to those selection values.
+    report_metric: Secondary metric reported alongside the selected one.
+    report_mean, report_std: Mean and sample standard deviation across runs
+        that logged the report metric.
+    n_report_metric: Number of runs contributing to those report values.
 """
 
-import wandb
-import pandas as pd
-import numpy as np
+from __future__ import annotations
+
+import argparse
 from collections import defaultdict
-from datasets import get_dataset_handler
+from collections.abc import Mapping, Sequence
+from pathlib import Path
+from typing import Any
 
-# Initialize WandB API
-api = wandb.Api()
+import numpy as np
+import pandas as pd
+import wandb
 
-# Set your project name
-PROJECT_NAME = "*******"  # Update this to match your project
-POLICY = "PI0"
 
-def _extract_scalar_from_summary_value(value):
-    """
-    W&B summaries may return nested SummarySubDict objects for metrics,
-    especially when historical aggregation or nested keys are involved.
-    This helper attempts to coerce such values into a single float.
-    """
-    # Direct numeric
+SELECTION_METRIC = "auc_by_min_task_step/val_seen"
+REPORT_METRIC = "auc_by_min_task_step/val_unseen_at_best_val_seen"
+SUMMARY_FIELDS = ("max", "best", "value", "mean", "median", "last")
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Aggregate W&B summary metrics across runs in each group."
+    )
+    parser.add_argument(
+        "project",
+        help="W&B project path, usually 'entity/project' (or 'project' for the default entity).",
+    )
+    parser.add_argument(
+        "--output",
+        type=Path,
+        default=Path("wandb_group_summary.csv"),
+        help="CSV destination (default: %(default)s).",
+    )
+    parser.add_argument(
+        "--selection-metric",
+        default=SELECTION_METRIC,
+        help="Metric used to select the best hyperparameters.",
+    )
+    parser.add_argument(
+        "--report-metric",
+        default=REPORT_METRIC,
+        help="Secondary metric reported for the selected hyperparameters.",
+    )
+    parser.add_argument(
+        "--include-running",
+        action="store_true",
+        help="Include runs whose W&B state is not 'finished'.",
+    )
+    return parser.parse_args()
+
+
+def as_scalar(value: Any) -> float | None:
+    """Return a numeric W&B summary value, including nested summary objects."""
     if isinstance(value, (int, float, np.number)):
         return float(value)
-    # SummarySubDict or dict-like
-    try:
-        # Convert to a plain dict if possible
-        as_dict = dict(value)
-    except Exception:
-        as_dict = value if isinstance(value, dict) else None
-    if isinstance(as_dict, dict):
-        # Prefer common numeric fields if present
-        for key in ("max", "best", "value", "mean", "median", "last"):
-            if key in as_dict and isinstance(as_dict[key], (int, float, np.number)):
-                return float(as_dict[key])
-        # Fallback: first numeric found
-        for v in as_dict.values():
-            if isinstance(v, (int, float, np.number)):
-                return float(v)
-    # Could not coerce
+
+    if not isinstance(value, Mapping):
+        try:
+            value = dict(value)
+        except (TypeError, ValueError):
+            return None
+
+    for field in SUMMARY_FIELDS:
+        nested_value = value.get(field)
+        if isinstance(nested_value, (int, float, np.number)):
+            return float(nested_value)
+
+    return next(
+        (
+            float(nested_value)
+            for nested_value in value.values()
+            if isinstance(nested_value, (int, float, np.number))
+        ),
+        None,
+    )
+
+
+def summary_metric_value(summary: Mapping[str, Any], metric_name: str) -> float | None:
+    """Read a metric from W&B, including values stored under a ``.max`` key.
+
+    ``wandb.define_metric(..., summary="max")`` commonly exposes its aggregate
+    as ``<metric_name>.max`` in a run summary.  Accepting the base name keeps
+    the command-line interface concise while still supporting that convention.
+    """
+    aggregate_names = (f"{metric_name}.max", f"{metric_name}.best")
+    for name in (*aggregate_names, metric_name):
+        value = as_scalar(summary.get(name))
+        if value is not None:
+            return value
     return None
 
-def get_group_statistics(project_name, metric_name="auc_by_min_task_step/val_seen"):
-    """
-    Get mean and std for a metric across all runs in each group.
-    
-    Args:
-        project_name: WandB project name
-        metric_name: Name of the metric to analyze (e.g., "auc_by_min_task_step/val_seen")
-    
-    Returns:
-        DataFrame with columns: group, lr, lambda_reg, mean, std, n_runs
-    """
-    runs = api.runs(project_name)
-    
-    # Group runs by their group name
-    groups = defaultdict(list)
+
+def nested_value(config: Mapping[str, Any], *keys: str, default: Any = None) -> Any:
+    """Read a nested config value without raising on incomplete old runs."""
+    value: Any = config
+    for key in keys:
+        if not isinstance(value, Mapping):
+            return default
+        value = value.get(key, default)
+    return value
+
+
+def extract_hyperparameters(config: Mapping[str, Any]) -> dict[str, Any]:
+    """Extract the experiment settings that identify a sweep group."""
+    use_scheduler = nested_value(config, "training", "use_scheduler", default=False)
+    return {
+        "learning_rate": nested_value(
+            config,
+            "training",
+            "learning_rate",
+            default=nested_value(config, "training", "lr"),
+        ),
+        "lambda_reg": nested_value(config, "training", "lambda_reg"),
+        "use_scheduler": use_scheduler,
+        "scheduler_type": nested_value(config, "scheduler", "type") if use_scheduler else None,
+        "scheduler_eta_min": nested_value(config, "scheduler", "eta_min") if use_scheduler else None,
+    }
+
+
+def summarize(values: Sequence[float]) -> dict[str, float | int]:
+    """Compute a sample standard deviation, using zero for one completed run."""
+    count = len(values)
+    return {
+        "mean": float(np.mean(values)) if values else np.nan,
+        "std": float(np.std(values, ddof=1)) if count > 1 else 0.0 if count == 1 else np.nan,
+        "n": count,
+    }
+
+
+def group_runs(runs: Sequence[Any], include_running: bool) -> dict[str, list[Any]]:
+    """Keep only grouped runs, optionally excluding unfinished experiments."""
+    groups: dict[str, list[Any]] = defaultdict(list)
     for run in runs:
-        if run.group:  # Only process runs that have a group
-            groups[run.group].append(run)
-    
-    results = []
-    
-    for group_name, group_runs in groups.items():
-        # Extract hyperparameters from config
-        try:
-            # Get from first run's config
-            first_run = group_runs[0]
-            config = first_run.config
-            
-            # Handle nested config structure
-            if "training" in config:
-                lr = config["training"].get("learning_rate", config["training"].get("lr", "N/A"))
-                lambda_reg = config["training"].get("lambda_reg", "N/A")
-                use_scheduler = config["training"].get("use_scheduler", False)
+        if not run.group or (not include_running and run.state != "finished"):
+            continue
+        groups[run.group].append(run)
+    return groups
 
-            if use_scheduler:
-                scheduler_type = config["scheduler"].get("type", "N/A")
-                eta_min = config["scheduler"].get("eta_min", "N/A")
-            else:
-                scheduler_type = "None"
-                eta_min = "N/A"
-        except Exception:
-            lr = "N/A"
-            lambda_reg = "N/A"
-            use_scheduler = False
-            scheduler_type = "N/A"
-            eta_min = "N/A"
-        # Extract metric values from summary (best value)
-        metric_values_seen = []
-        metric_values_unseen_at_best_val_seen = []
-        for run in group_runs:
-            # Try to get metric from summary
-            summary = run.summary
 
-            for metric_name in metrics:
-                if metric_name in summary:
-                    coerced = _extract_scalar_from_summary_value(summary[metric_name])
-                    if coerced is not None:
-                        if metric_name == "auc_by_min_task_step/val_seen":
-                        #if metric_name == "auc_seen":
-                            metric_values_seen.append(coerced)
-                        elif metric_name == "auc_by_min_task_step/val_unseen_at_best_val_seen":
-                        #elif metric_name == "auc_unseen":
-                            metric_values_unseen_at_best_val_seen.append(coerced)
-                
-        
-        if metric_values_seen and metric_values_unseen_at_best_val_seen:
-            mean_val_seen = np.mean(metric_values_seen)
-            std_val_seen = np.std(metric_values_seen)
-            n_runs_seen = len(metric_values_seen)
-            mean_val_unseen_at_best_val_seen = np.mean(metric_values_unseen_at_best_val_seen)
-            std_val_unseen_at_best_val_seen = np.std(metric_values_unseen_at_best_val_seen)
-            n_runs_unseen_at_best_val_seen = len(metric_values_unseen_at_best_val_seen)
-            
-            results.append({
+def get_group_statistics(
+    api: wandb.Api,
+    project: str,
+    selection_metric: str,
+    report_metric: str,
+    include_running: bool = False,
+) -> pd.DataFrame:
+    """Return one row per W&B group with metrics across its available runs."""
+    groups = group_runs(api.runs(project), include_running)
+    rows: list[dict[str, Any]] = []
+
+    for group_name, runs in groups.items():
+        selection_values = [
+            value
+            for run in runs
+            if (value := summary_metric_value(run.summary, selection_metric)) is not None
+        ]
+        report_values = [
+            value
+            for run in runs
+            if (value := summary_metric_value(run.summary, report_metric)) is not None
+        ]
+        selection_summary = summarize(selection_values)
+        report_summary = summarize(report_values)
+
+        rows.append(
+            {
                 "group": group_name,
-                "lr": lr,
-                "lambda_reg": lambda_reg,
-                "use_scheduler": use_scheduler,
-                "scheduler_type": scheduler_type,
-                "eta_min": eta_min,
-                "mean_val_seen": mean_val_seen,
-                "std_val_seen": std_val_seen,
-                "n_runs_seen": n_runs_seen,
-                "values_seen": metric_values_seen,
-                "mean_val_unseen_at_best_val_seen": mean_val_unseen_at_best_val_seen,
-                "std_val_unseen_at_best_val_seen": std_val_unseen_at_best_val_seen,
-                "n_runs_unseen_at_best_val_seen": n_runs_unseen_at_best_val_seen,
-                "values_unseen_at_best_val_seen": metric_values_unseen_at_best_val_seen
-            })
-    
-    df = pd.DataFrame(results)
-    return df.sort_values(["lr", "lambda_reg"])
+                "n_finished_runs": len(runs),
+                **extract_hyperparameters(runs[0].config),
+                "selection_metric": selection_metric,
+                "selection_mean": selection_summary["mean"],
+                "selection_std": selection_summary["std"],
+                "n_selection_metric": selection_summary["n"],
+                "report_metric": report_metric,
+                "report_mean": report_summary["mean"],
+                "report_std": report_summary["std"],
+                "n_report_metric": report_summary["n"],
+            }
+        )
+
+    frame = pd.DataFrame(rows)
+    if frame.empty:
+        return frame
+    return frame.sort_values(
+        ["selection_mean", "learning_rate", "lambda_reg"],
+        ascending=[False, True, True],
+        na_position="last",
+    )
 
 
-def print_results_table(df, metric_name="auc_by_min_task_step/val_seen"):
-    """Print a nicely formatted results table."""
-    print(f"\n{'='*80}")
-    print(f"Results for metric: {metric_name}")
-    print(f"{'='*80}")
-    print(f"\n{'LR':<12} {'Lambda Reg':<12} {'Mean':<10} {'Std':<10} {'N Runs':<8}")
-    print("-" * 80)
-    
-    for _, row in df.iterrows():
-        print(f"{row['lr']:<12.6f} {row['lambda_reg']:<12.6f} "
-              f"{row['mean']:<10.4f} {row['std']:<10.4f} {int(row['n_runs']):<8}")
-    
-    print(f"\n{'='*80}\n")
+def print_results_table(frame: pd.DataFrame) -> None:
+    """Print the fields needed to inspect a hyperparameter sweep."""
+    if frame.empty:
+        print("No grouped runs with the requested state were found.")
+        return
+
+    display_columns = [
+        "group",
+        "learning_rate",
+        "lambda_reg",
+        "selection_mean",
+        "selection_std",
+        "n_selection_metric",
+        "report_mean",
+        "report_std",
+        "n_report_metric",
+    ]
+    print(frame[display_columns].to_string(index=False, float_format="{:.4f}".format))
+
+
+def main() -> None:
+    args = parse_args()
+    frame = get_group_statistics(
+        api=wandb.Api(),
+        project=args.project,
+        selection_metric=args.selection_metric,
+        report_metric=args.report_metric,
+        include_running=args.include_running,
+    )
+    print_results_table(frame)
+
+    if frame.empty:
+        return
+
+    args.output.parent.mkdir(parents=True, exist_ok=True)
+    frame.to_csv(args.output, index=False)
+    groups_with_selection_metric = frame.dropna(subset=["selection_mean"])
+    if groups_with_selection_metric.empty:
+        print(
+            f"\nWrote {len(frame)} groups to {args.output}, but none contained "
+            f"the selection metric '{args.selection_metric}'."
+        )
+        return
+
+    best = groups_with_selection_metric.iloc[0]
+    print(f"\nBest group by {args.selection_metric}: {best['group']}")
+    print(f"Wrote {len(frame)} groups to {args.output}")
 
 
 if __name__ == "__main__":
-    metrics = ["auc_by_min_task_step/val_seen", "auc_by_min_task_step/val_unseen_at_best_val_seen"]
-    #metrics = ["auc_seen", "auc_unseen"]
-    # Create a summary table with all metrics
-    print("\n" + "="*80)
-    print("SUMMARY: Best hyperparameter settings")
-    print("="*80)
-    
-    try:
-        df_seen = get_group_statistics(PROJECT_NAME, metrics)
-        csv_filename = f"{POLICY}_{PROJECT_NAME}_results.csv"
-
-        if not df_seen.empty:
-            df_seen.to_csv(csv_filename, index=False)
-            best_idx = df_seen['mean_val_seen'].idxmax()
-            best_row = df_seen.loc[best_idx]
-            print("\nBest val_seen AUC:")
-            print(f"  Group: {best_row['group']}")
-            print(f"  LR: {best_row['lr']:.6f}")
-            print(f"  Lambda Reg: {best_row['lambda_reg']:.6f}")
-            print(f"  Use Scheduler: {best_row['use_scheduler']}")
-            print(f"  Scheduler Type: {best_row['scheduler_type']}")
-            print(f"  Eta Min: {best_row['eta_min']}")
-            print(f"  Seen Mean AUC: {best_row['mean_val_seen']:.4f} ± {best_row['std_val_seen']:.4f}")
-            print(f"  Unseen at Best Val Seen Mean AUC: {best_row['mean_val_unseen_at_best_val_seen']:.4f} ± {best_row['std_val_unseen_at_best_val_seen']:.4f}")
-    except Exception as e:
-        print(f"Error creating summary: {e}")
-
+    main()

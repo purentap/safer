@@ -19,7 +19,7 @@ class OpenPi0SimplerDatasetHandler(BaseDatasetHandler):
     def load_rollouts(self):
         all_rollouts = []
         print("***************** Loading rollouts *****************")
-        dataset_path = self.cfg.dataset.path
+        dataset_path = self.cfg.data_root
         all_task_names = os.listdir(dataset_path)
 
         keep_tasks = [

@@ -1,6 +1,6 @@
 
 name: open_pi0_simpler_fractal
-path: /mnt/mahzen/puren/research_data/simpler_env/rollouts/pizero_v1/fractal_beta_step29576_2024-12-29_13-10_42
+path: ${oc.env:OPENPIZERO_FRACTAL_ROLLOUT_PATH}
 subset: fractal
 pred_horizon: 4
 exec_horizon: 2

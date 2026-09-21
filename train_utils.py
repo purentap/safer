@@ -75,17 +75,9 @@ def train_epoch(model, opt, dataloader, device, lambda_reg, model_type):
             failure_labels = (1 - success_labels.float()).unsqueeze(-1).expand_as(outputs)
  
             losses = criterion(outputs, failure_labels) # (B, T)
-            '''
-            we dont use time weights for now
-            # Apply the time weights only on the failure samples
-            losses[success_labels == 0] *= time_weights[success_labels == 0] # (B, T)    
-            '''
-
             
         loss, avg_fail_loss, avg_success_loss = calculate_fail_success_loss(losses, valid_masks, success_labels, weights)
 
-        
-        
         #regularization loss 
         reg_loss = 0.0 
         for name, param in model.named_parameters():
@@ -97,7 +89,6 @@ def train_epoch(model, opt, dataloader, device, lambda_reg, model_type):
 
         ### END OF REGULARIZATION LOSS     
         
-
         total_loss = loss + reg_loss
         fail_succ_loss = loss
         # Backward and optimize

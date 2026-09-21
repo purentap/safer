@@ -1,17 +1,13 @@
 #!/usr/bin/env python
-from random import seed
-import utils as utils 
+import utils  
 from data import RolloutDataset
 import torch
 from torch.utils.data import DataLoader
-from tqdm import tqdm, trange
+from tqdm import trange
 from train_utils import train_epoch, eval_epoch
 import wandb 
 import hydra
 from omegaconf import DictConfig, OmegaConf
-import torch.optim as optim
-import numpy as np
-import gc 
 from datasets import get_dataset_handler
 
 @hydra.main(version_base=None, config_path="conf", config_name="config")
@@ -30,7 +26,7 @@ def main(cfg: DictConfig):
     wandb_group = cfg.wandb.group or f"{cfg.model.name}_lr_{lr_str}_lambda_{lambda_str}_{scheduler_str}{epochs_str}"
     
     # Run name includes seed to distinguish runs within the same group
-    wandb_name = cfg.wandb.name or f"seed_{cfg.seed}"
+    wandb_name = cfg.wandb.run or f"seed_{cfg.seed}"
     print(wandb_group, wandb_name)
     if cfg.wandb.enabled:
         wandb.init(project=cfg.wandb.project, group=wandb_group, config=wandb_config, name=wandb_name, reinit=True)
@@ -83,28 +79,27 @@ def main(cfg: DictConfig):
     model = model.to(device)
     ## END OF MODEL INSTANTIATION ##
 
-    ## OPTIMIZER INSTANTIATION ##
+    # OPTIMIZER INSTANTIATION ##
     optimizer = utils.create_optimizer(model, cfg)
-    ## END OF OPTIMIZER INSTANTIATION ##
+    # END OF OPTIMIZER INSTANTIATION ##
 
-    ## SCHEDULER INSTANTIATION ##
-    #scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.3, patience=10)
+    # SCHEDULER INSTANTIATION ##
     scheduler = utils.create_scheduler(optimizer, cfg)
     print(scheduler)
-    ## END OF SCHEDULER INSTANTIATION ##
+    # END OF SCHEDULER INSTANTIATION ##
 
     pbar = trange(cfg.training.n_epochs)
     train_dataloader = dataloader_by_split_name["train"]
-    best_auc_so_far, auc_seen, auc_unseen = 0, 0, 0
+    best_auc_so_far, auc_seen, auc_unseen = float("-inf"), float("-inf") , float("-inf")
     best_epoch = 0
-    best_val_unseen_auc = 0  # Track val_unseen at best val_seen epoch
+    best_val_unseen_auc = float("-inf")  # Track val_unseen at best val_seen epoch
     print(cfg.training.n_epochs)
     
     for epoch in pbar:
 
         model.train()
 
-        loss, reg_loss, fail_succ_loss, avg_fail_loss, avg_success_loss = train_epoch(model, optimizer, train_dataloader, device, cfg.training.lambda_reg, model_type=cfg.model.type)
+        loss, reg_loss, fail_succ_loss, avg_fail_loss, avg_success_loss = train_epoch(model, optimizer, train_dataloader, device, cfg.training.lambda_reg, model_type=cfg.model.name)
         pbar.set_description(f"Loss: {loss:.4f}")
 
         if scheduler:
@@ -123,14 +118,10 @@ def main(cfg: DictConfig):
             best_auc_so_far = auc_seen
             best_epoch = epoch
             best_val_unseen_auc = auc_unseen
-            if cfg.training.save_best_model:
-                torch.save({"model_state_dict": model.state_dict(), "epoch": epoch}, f"./models/pi0fast_layernorm3/{cfg.seed}_model.pth")
-            # if cfg.wandb.enabled:
-            #     wandb.log({"classify_functional_cp/": wandb.Table(dataframe=classification_logs)})
-            #     wandb.log({"classify_fixed_threshold/": wandb.Table(dataframe=classification_logs_fixed_threshold)})  
-            #     wandb.log({"classify_best_threshold/": wandb.Table(dataframe=classification_logs_best_threshold)})
-            #     wandb.log({"best_epoch": epoch+1})  
-                
+            if cfg.checkpoint.enabled:
+                model_path = cfg.checkpoint.path + cfg.checkpoint.filename
+                torch.save({"epoch": epoch, "model_state_dict": model.state_dict(), "seen_auc": best_auc_so_far, "unseen_auc": best_val_unseen_auc, "config": OmegaConf.to_container(cfg, resolve= True)}, model_path)
+
         if cfg.wandb.enabled:
             logs = {**logs,
                     "auc_seen": auc_seen,

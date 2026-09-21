@@ -12,6 +12,7 @@ DATASET="pi0fast_droid"
 python train.py -m \
     model="${MODEL}" \
     dataset="${DATASET}" \
+    data_root = $PI0_DROID_ROLLOUT_PATH$ \
     training.use_scheduler=false \
     training.learning_rate=${LEARNING_RATES} \
     training.batch_size="${BATCH_SIZE}" \

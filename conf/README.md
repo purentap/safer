@@ -1,112 +1,76 @@
-# Hydra Configuration Guide
+# Hydra configuration guide
 
-This directory contains a modular Hydra configuration structure for managing different model types, input configurations, and training parameters.
+`conf/config.yaml` is the composed root configuration. It selects a model and
+a dataset preset, then provides training, optimizer, scheduler, checkpoint,
+W&B, and visualization settings.
 
-## Directory Structure
-
-```
-conf/
-├── config.yaml              # Main config file
-├── model/                   # Model configurations
-│   ├── mlp.yaml
-│   ├── lstm.yaml            # Generic LSTM (uses inputs.total_dim)
-│   ├── lstm_img.yaml        # LSTM for image-only inputs
-│   ├── lstm_img_action.yaml # LSTM for img+action inputs
-│   └── fusion_lstm.yaml     # Fusion LSTM with adaptive weights
-├── inputs/                  # Input configurations
-│   ├── img_only.yaml
-│   └── img_action.yaml
-└── dataset/                 # Dataset configurations
-    └── default.yaml
+```yaml
+defaults:
+  - model: fusion_lstmv2
+  - dataset: pi0fast_droid
+  - _self_
 ```
 
-## Usage Examples
+## Select a preset
 
-### 1. LSTM with Image-Only Inputs
 ```bash
-python train.py model=lstm_img inputs=img_only
+python train.py \
+  model=fusion_lstmv2 \
+  dataset=pi0_libero \
+  data_root="$PI0_ROLLOUT_ROOT"
 ```
 
-### 2. LSTM with Image + Action Inputs
+Available dataset presets are:
+
+```text
+openvla
+openvla_widowx
+pi0_libero
+pi0fast_libero
+pi0fast_droid
+open_pi0_simpler_bridge
+open_pi0_simpler_fractal
+```
+
+The supported model-factory presets are `fusion_lstmv2` and `lstm`.
+`fusion_lstmv2` derives image and action dimensions from the chosen dataset.
+
+## Override values
+
+
 ```bash
-python train.py model=lstm_img_action inputs=img_action
+python train.py \
+  dataset=pi0_libero \
+  data_root="$PI0_ROLLOUT_ROOT" \
+  training.n_epochs=200 \
+  training.batch_size=32 \
+  training.learning_rate=3e-4 \
+  training.lambda_reg=1e-3 \
+  model.params.lstm_hidden_dim=128 \
+  wandb.enabled=false
 ```
 
-### 3. Fusion LSTM (with adaptive learnable weights)
+For multiruns, use `-m` and comma-separated values:
+
 ```bash
-python train.py model=fusion_lstm inputs=img_action
+python train.py -m \
+  dataset=pi0_libero \
+  data_root="$PI0_ROLLOUT_ROOT" \
+  seed=0,1,2 \
+  training.learning_rate=1e-4,3e-4
 ```
 
-### 4. MLP Model
-```bash
-python train.py model=mlp inputs=img_only
-```
+## Main sections
 
-### 5. Override Specific Parameters
-```bash
-# Change learning rate and batch size
-python train.py model=lstm_img inputs=img_only training.learning_rate=0.0001 training.batch_size=32
-
-# Disable adaptive weights in FusionLSTM
-python train.py model=fusion_lstm inputs=img_action model.params.use_gate=false
-
-# Change LSTM hidden dimension
-python train.py model=lstm_img inputs=img_only model.params.hidden_dim=512
-```
-
-### 6. Multi-run (Hyperparameter Sweeps)
-```bash
-# Sweep over learning rates
-python train.py -m model=lstm_img inputs=img_only training.learning_rate=0.001,0.0001,0.00001
-
-# Sweep over multiple configurations
-python train.py -m model=lstm_img,lstm_img_action inputs=img_only,img_action
-```
-
-## Configuration Composition
-
-The configuration uses Hydra's composition feature:
-
-1. **Model Config**: Defines the model architecture (class_name, type, hyperparameters)
-2. **Inputs Config**: Defines which inputs to use and their dimensions
-3. **Dataset Config**: Defines dataset paths and settings
-4. **Main Config**: Combines everything with training hyperparameters
-
-## Key Features
-
-- **Modular Design**: Easy to add new models or input configurations
-- **Parameter Resolution**: Input dimensions automatically resolve based on input config
-- **Type Safety**: Each model config specifies its class_name for dynamic instantiation
-- **Flexible Overrides**: Any parameter can be overridden from command line
-
-## Model Types
-
-1. **MLPModel**: Simple MLP for image embeddings
-2. **LSTMModel**: LSTM that can work with image-only or concatenated img+action
-3. **FusionLSTMModel**: LSTM with adaptive learnable weights (gate mechanism) for img+action fusion
-
-## Input Configurations
-
-- **img_only**: Uses only image embeddings (2176 dim)
-- **img_action**: Uses both image (2176 dim) and action (4096 dim) embeddings
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+| Section | Purpose |
+| --- | --- |
+| `data_root` | Mandatory root directory for the chosen rollout dataset. |
+| `dataset` | Loader name, embedding field names/dimensions, split ratios, and benchmark-specific options. |
+| `model` | Detector implementation and architecture parameters. |
+| `training` | Epochs, batch size, learning rate, regularization, and scheduler toggle. |
+| `optimizer` | Optimizer type and weight decay. The current factory implements `Adam`. |
+| `scheduler` | Scheduler configuration used when `training.use_scheduler=true`. |
+| `checkpoint` | Best-model checkpoint setting and destination. |
+| `wandb` | W&B project, grouping, run name, and enable switch. |
+<!-- | `visualization` | t-SNE output directory, timestep stride, perplexity, and point size. | -->
 

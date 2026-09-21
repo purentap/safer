@@ -15,8 +15,7 @@ class Pi0LiberoDatasetHandler(BaseDatasetHandler):
     
     def __init__(self, cfg):
         super().__init__(cfg)
-        self.path = cfg.dataset.path
-        self.device = cfg.dataset.device
+        self.path = cfg.data_root
         self.unseen_task_ratio = cfg.dataset.unseen_task_ratio
         self.seen_train_ratio = cfg.dataset.seen_train_ratio
         self.hidden_feature_dim = cfg.dataset.hidden_feature_dim
@@ -31,6 +30,10 @@ class Pi0LiberoDatasetHandler(BaseDatasetHandler):
         
         env_record_paths = glob.glob(os.path.join(env_records_folder, "*.pkl"))
         policy_record_paths = glob.glob(os.path.join(policy_records_folder, "*meta.pkl"))
+        if not env_record_paths or not policy_record_paths:
+            raise FileNotFoundError(
+                f"Expected rollout files in {env_records_folder} and {policy_records_folder}"
+            )
         
 
         env_record_paths = natsort.natsorted(env_record_paths)
@@ -60,10 +63,9 @@ class Pi0LiberoDatasetHandler(BaseDatasetHandler):
             image_embeddings = []
 
             for policy_record in policy_records:
-                #print(policy_record["base_rgb_patches_before_projection"].shape)
 
                 # hidden_state shape: (n_diff_steps, n_pred_horizon, dim_feats)
-                hidden_state = policy_record["pre_velocity"]
+                hidden_state = policy_record[self.cfg.dataset.hidden_feat_name]
 
                 # handle the pred_horizon dimension
                 # we use the first dimension since its reported it works best.
@@ -109,4 +111,3 @@ class Pi0LiberoDatasetHandler(BaseDatasetHandler):
             all_rollouts.append(rollout_data)
         all_rollouts = self.set_task_min_step(all_rollouts)
         return all_rollouts
-

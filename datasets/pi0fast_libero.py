@@ -18,13 +18,17 @@ class Pi0FastLiberoDatasetHandler(BaseDatasetHandler):
     def load_rollouts(self):
         all_rollouts = []
         print("***************** Loading rollouts *****************")
-        dataset_path = self.cfg.dataset.path
+        dataset_path = self.cfg.data_root
         
         env_records_folder = os.path.join(dataset_path, "env_records")
         policy_records_folder = os.path.join(dataset_path, "policy_records")
 
         env_record_paths = glob.glob(os.path.join(env_records_folder, "*.pkl"))
         policy_record_paths = glob.glob(os.path.join(policy_records_folder, "*meta.pkl"))
+        if not env_record_paths or not policy_record_paths:
+            raise FileNotFoundError(
+                f"Expected rollout files in {env_records_folder} and {policy_records_folder}"
+            )
 
         env_record_paths = natsort.natsorted(env_record_paths)
         policy_record_paths = natsort.natsorted(policy_record_paths)
@@ -48,7 +52,6 @@ class Pi0FastLiberoDatasetHandler(BaseDatasetHandler):
                 policy_step += 1
 
             hidden_states = []
-            action_vectors = []
             image_embeddings = []
             for policy_record in policy_records:
                 hidden_state = policy_record[self.cfg.dataset.hidden_feat_name]

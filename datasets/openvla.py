@@ -16,10 +16,12 @@ class OpenVLADatasetHandler(BaseDatasetHandler):
         self.cfg = cfg
     def load_rollouts(self, path=None):
         if path is None:
-            path = self.cfg.dataset.path
+            path = self.cfg.data_root
         all_rollouts = []
         #pkl_files = glob.glob(os.path.join(path, "*.pkl"))
         csv_files = glob.glob(os.path.join(path, "*.csv"))
+        if not csv_files:
+            raise FileNotFoundError(f"No CSV rollout files found directly in {path}")
         cntr = 0 
         for csv_file in tqdm(csv_files, desc="Loading data"):
             episode_embeddings = []
@@ -28,9 +30,8 @@ class OpenVLADatasetHandler(BaseDatasetHandler):
             
             with open(pkl_file, "rb") as f:
                 data = pickle.load(f)
-            #print(data["embeddings_and_attention_masks"][0].keys())
 
-            hidden_states = data["hidden_states"]
+            hidden_states = data[self.cfg.dataset.hidden_feat_name]
             token_idx = round((hidden_states.shape[-2] - 1) * 1)
 
             # Convert torch tensor to numpy array
@@ -40,7 +41,7 @@ class OpenVLADatasetHandler(BaseDatasetHandler):
                 action_embeddings = hidden_states[..., token_idx, :]
             action_embeddings = torch.tensor(action_embeddings, dtype=torch.float32)
             
-            episode_embeddings = data["img_embeds"]
+            episode_embeddings = data[self.cfg.dataset.img_embedding_name]
             episode_embeddings = torch.stack(episode_embeddings)
             episode_embeddings = episode_embeddings.squeeze(1)
             episode_embeddings = episode_embeddings.to(torch.float32)

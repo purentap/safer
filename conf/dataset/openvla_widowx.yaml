@@ -1,9 +1,11 @@
 
 name: openvla_widowx
-path: "/home/enes/puren/data/openvla_widowx/correct_embeddings/openvla_widowx_correct_embeds_data/openvla_widowx/**/"
+path: ${oc.env:OPENVLA_WIDOWX_ROLLOUT_PATH}
 unseen_task_ratio: 0.25
 seen_train_ratio: 0.66
 
 hidden_feature_dim: 4096
 image_embedding_dim: 2176
-# convenience for models needing concatenated dim (img_action)
+
+hidden_feat_name: hidden_states
+img_embedding_name: img_embeds

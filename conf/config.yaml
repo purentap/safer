@@ -1,10 +1,17 @@
 defaults:
   - model: fusion_lstmv2
-  - dataset: pi0fast_droid
+  - dataset: openvla
   - _self_
 
 # Random seed
 seed: 0
+data_root: ${dataset.path}
+
+# visualization:
+#   output_dir: visualizations
+#   stride: 1
+#   perplexity: 30
+#   point_size: 1.0
 
 # Training hyperparameters
 training:
@@ -21,6 +28,11 @@ optimizer:
   lr: ${training.learning_rate}
   weight_decay: 0.0
 
+checkpoint:
+  enabled: true
+  filename: best_model.pth
+  path: ./checkpoints
+  
 # Scheduler configuration
 scheduler:
   type: CosineAnnealingLR  #CosineAnnealingLR, StepLR, None
@@ -34,3 +46,4 @@ wandb:
   enabled: true
   project: temp
   group: null  # Will be set automatically or can be overridden
+  run: null  # Will be set automatically or can be overridden

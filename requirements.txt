@@ -9,3 +9,4 @@ pandas
 scikit_learn
 tqdm
 wandb
+ml-dtypes

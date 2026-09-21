@@ -14,6 +14,7 @@ __pycache__/
 *.csv
 *.png
 .vscode/
+scripts/local_env.sh
 artifacts/
 outputs/
 visualizations/
